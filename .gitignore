@@ -1,0 +1,17 @@
+# build
+build/
+out/
+
+# dipendenze locali (header/package estratti, mai versionati)
+third_party/
+plugins/*/third_party/
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# artefatti di rendering / probe
+*.mp4
+*.raw
+probe/
