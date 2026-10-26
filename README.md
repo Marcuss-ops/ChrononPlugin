@@ -18,9 +18,10 @@ ChrononPlugin/
   plugins/
     maps/                 # plugin mappe (famiglia geo/documentary maps)
       include/chrononplugin/maps/   # contratto pubblico del plugin
-      src/                          # rasterizzatore tile/plate, geo core
+      src/                          # renderer nativo mappe, geo core
       tests/                        # test C++ del plugin
-      tools/                        # tool Python (cartography, parità raster)
+      tools/                        # tool Python (cartography) + map_native/
+        map_native/                 # CLI maps_dynamic_map_render + gate di parità
     effects/              # ricette specialistiche immagine/video, renderizzate dal core
     typography/           # preset testuali e authoring delle caption
 ```
@@ -38,10 +39,14 @@ Vulkan condivise. Il dominio geo è mantenuto solo in `plugins/maps`.
   e si registra attraverso i meccanismi già esistenti.
 - Un plugin può chiedere a ChrononMotion3D il movimento (es. il percorso di
   una camera) senza implementare il proprio interpolatore cinematico.
-- Un plugin non possiede un renderer di pixel parallelo: la pipeline è
-  `dominio → geometria → animazioni campionate → RenderPlan → Chronon3D`.
-  (Il rasterizzatore di `plugins/maps` è la base di parità bit-exact del
-  porting nativo mappe, non un secondo renderer di prodotto.)
+- Il plugin maps è il **renderer dinamico ufficiale** delle mappe
+  (`maps_dynamic_map_render`, lane unica dal 2026-10-26): il renderer Python
+  di ChrononTemplate è stato ritirato. La pipeline è
+  `dominio → geometria → animazioni campionate → renderer mappe → overlay`;
+  il renderer espone il contratto CLI e la telemetria certificata
+  (`chronon.dynamic-map-telemetry.v1`) senza duplicare i contratti di
+  estensione. Le composizioni non ancora portate falliscono chiuso con errore
+  tipizzato; le gate di parità bit-exact vivono in `plugins/maps/tools/map_native/`.
 - Ogni plugin è costruibile senza ricompilare Chronon3D.
 
 ## Build e test
@@ -51,6 +56,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
+**Requisito**: `libtbb.so.2` (ABI TBB 2) quando si usa la OpenCV statica del
+bootstrap; con un OpenCV di sistema completo il requisito non si applica.
 
 Le dipendenze del plugin mappe (OpenCV headers, Clipper2, nlohmann_json)
 sono risolte da `plugins/maps/CMakeLists.txt`; in assenza di un OpenCV di
