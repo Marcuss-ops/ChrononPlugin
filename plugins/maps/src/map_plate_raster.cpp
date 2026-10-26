@@ -14,6 +14,8 @@
 
 #include <nlohmann/json.hpp>
 #include <opencv2/imgproc.hpp>
+#include <cstdint>
+#include <cstddef>
 
 namespace chrononplugin::maps {
 

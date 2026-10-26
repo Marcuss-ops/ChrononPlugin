@@ -1,0 +1,11 @@
+maps_geo_core_test 4 0.000830706
+maps_map_plate_render_test 3 0.345786
+maps_map_plate_raster_test 4 0.0645839
+maps_camera_label_test 4 0.00120048
+maps_map_plate_telemetry_test 4 0.000608204
+maps_cartography_geodesy 4 0.0343281
+maps_dynamic_tile_pyramid_offline 0 0
+maps_raster_parity_check 4 1.98356
+maps_camera_label_parity_check 4 1.35885
+maps_composite_parity_check 4 3.00975
+---

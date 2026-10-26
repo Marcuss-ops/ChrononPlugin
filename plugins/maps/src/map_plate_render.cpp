@@ -24,6 +24,8 @@
 #include "chrononplugin/maps/map_plate_compose.hpp"
 #include "chrononplugin/maps/map_plate_raster.hpp"
 #include "chrononplugin/maps/map_plate_telemetry.hpp"
+#include <cstdint>
+#include <cstddef>
 
 namespace chrononplugin::maps {
 
@@ -179,6 +181,34 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
     return true;
 }
 
+/// Pin-level fields follow the same rule as the payload: only the grounded
+/// place identity is known. Per-pin presentation (accent color, cards,
+/// subtitles) belongs to composed presentations that are not ported, so it is
+/// refused by name — the renderer never silently ignores a field it does not
+/// draw.
+[[nodiscard]] bool known_pin_keys(const nlohmann::json& payload,
+                                  std::string& error) {
+    static const std::set<std::string> kKnownPinKeys = {
+        "id", "label", "latitude", "longitude",
+    };
+    const auto& pins = payload.find("pins");
+    if (pins == payload.end()) {
+        return true;
+    }
+    for (const auto& raw : *pins) {
+        if (!raw.is_object()) {
+            continue;  // shape errors belong to normalize_pins
+        }
+        for (auto it = raw.begin(); it != raw.end(); ++it) {
+            if (kKnownPinKeys.find(it.key()) == kKnownPinKeys.end()) {
+                error = "pin field outside the native map subset: " + it.key();
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 /// Semantic fields the native subset does not certify yet: any non-default
 /// value is refused by name (the port adds them one parity gate at a time).
 [[nodiscard]] bool supported_semantics(const nlohmann::json& payload,
@@ -242,6 +272,9 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
 
     std::string error;
     if (!known_payload_keys(payload, error)) {
+        return {MapPlateStatus::kNotImplemented, error};
+    }
+    if (!known_pin_keys(payload, error)) {
         return {MapPlateStatus::kNotImplemented, error};
     }
     if (!supported_semantics(payload, error)) {

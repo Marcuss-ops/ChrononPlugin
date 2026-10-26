@@ -88,6 +88,17 @@ int main() {
     CHECK(refused.status == MapPlateStatus::kNotImplemented);
     CHECK(!refused.error.empty());
 
+    // Pin-level fields follow the same rule: per-pin presentation belongs to
+    // composed presentations that are not ported, so it is refused by name —
+    // never silently dropped from the wire.
+    const std::string extras_pin_payload =
+        "{\"width\":64,\"height\":36,\"pins\":["
+        "{\"id\":\"a\",\"label\":\"A\",\"latitude\":41.9,\"longitude\":12.5,"
+        "\"color\":\"#FF3B30\"}]}";
+    const auto refused_pin = render_map_plate(request_for(extras_pin_payload));
+    CHECK(refused_pin.status == MapPlateStatus::kNotImplemented);
+    CHECK(refused_pin.error.find("color") != std::string::npos);
+
     // Compositions outside the base flyover are refused BY NAME.
     CHECK(render_map_plate(request_for(single_pin_with("\"map_animation\":\"route_line\"")))
               .status == MapPlateStatus::kNotImplemented);

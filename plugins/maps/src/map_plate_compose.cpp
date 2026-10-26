@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include <opencv2/imgproc.hpp>
+#include <cstdint>
 
 namespace chrononplugin::maps {
 

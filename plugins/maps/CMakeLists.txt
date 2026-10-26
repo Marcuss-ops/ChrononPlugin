@@ -70,11 +70,11 @@ add_library(chrononplugin_maps STATIC
 
 # Default boundary catalog for the native renderer (overridable at runtime
 # with CHRONON_MAPS_CATALOG_DIR).
-if(NOT DEFINED CHROMON_MAPS_CATALOG_DIR)
+if(NOT DEFINED CHRONON_MAPS_CATALOG_DIR)
     set(CHRONON_MAPS_CATALOG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/catalog")
 endif()
 target_compile_definitions(chrononplugin_maps PRIVATE
-    CHRONON_MAPS_CATALOG_DIR_DEFAULT="${CHROMON_MAPS_CATALOG_DIR}")
+    CHRONON_MAPS_CATALOG_DIR_DEFAULT="${CHRONON_MAPS_CATALOG_DIR}")
 
 # Bake the native renderer fingerprint from the renderer sources: the cache
 # identity must change whenever the renderer code changes
@@ -110,12 +110,11 @@ add_test(NAME maps_map_plate_render_test COMMAND maps_map_plate_render_test)
 
 # Boundary sources for the raster test: the same files the Python renderer
 # reads, from the ChrononTemplate catalog next to this workspace.
-set(CHROMON_MAPS_CATALOG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/catalog")
 add_executable(maps_map_plate_raster_test tests/map_plate_raster_test.cpp)
 target_link_libraries(maps_map_plate_raster_test PRIVATE chrononplugin_maps)
 target_compile_definitions(maps_map_plate_raster_test PRIVATE
-    CHROMON_MAPS_COUNTRIES_GEOJSON="${CHROMON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
-    CHROMON_MAPS_ITALY_ADMIN2_GEOJSON="${CHROMON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson")
+    CHRONON_MAPS_COUNTRIES_GEOJSON="${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
+    CHRONON_MAPS_ITALY_ADMIN2_GEOJSON="${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson")
 add_test(NAME maps_map_plate_raster_test COMMAND maps_map_plate_raster_test)
 
 add_executable(maps_camera_label_test tests/map_camera_label_test.cpp)
@@ -142,6 +141,22 @@ target_link_libraries(maps_camera_label_parity_dump PRIVATE chrononplugin_maps)
 add_executable(maps_dynamic_map_render tools/map_native/map_render_cli.cpp)
 target_link_libraries(maps_dynamic_map_render PRIVATE chrononplugin_maps)
 
+# Distribution (TICKET-MAPS-NATIVE-PORT fase 6): the renderer binary and its
+# boundary catalog install as ONE unit. The host drop-in
+# refactored/scripts/systemd/pipelinegen.service.d/map-native.conf points at
+# these paths (bin/maps_dynamic_map_render + share/chrononplugin/maps-catalog);
+# the runtime container image copies the same layout under its prefix.
+include(GNUInstallDirs)
+install(TARGETS maps_dynamic_map_render
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+# Only the two boundary sources map_plate_render reads (Natural Earth 50m
+# countries + geoBoundaries ITA ADM2): the ChrononTemplate catalog also holds
+# plates and fixtures that never belong in a runtime image.
+install(FILES "${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog")
+install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
+
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 set(_cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography")
 add_test(NAME maps_cartography_geodesy
@@ -162,7 +177,7 @@ add_test(NAME maps_raster_parity_check
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_raster_check.py"
         --dump-tool $<TARGET_FILE:maps_raster_parity_dump>
         --python-reference "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/tools/map"
-        --catalog "${CHROMON_MAPS_CATALOG_DIR}"
+        --catalog "${CHRONON_MAPS_CATALOG_DIR}"
         --cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography")
 set_tests_properties(maps_raster_parity_check PROPERTIES
     SKIP_RETURN_CODE 77
@@ -187,7 +202,7 @@ add_test(NAME maps_composite_parity_check
         --render-tool $<TARGET_FILE:maps_dynamic_map_render>
         --python-reference "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/tools/map"
         --cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography"
-        --catalog "${CHROMON_MAPS_CATALOG_DIR}")
+        --catalog "${CHRONON_MAPS_CATALOG_DIR}")
 set_tests_properties(maps_composite_parity_check PROPERTIES
     SKIP_RETURN_CODE 77
     TIMEOUT 600)

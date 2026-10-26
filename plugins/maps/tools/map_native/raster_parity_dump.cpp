@@ -22,6 +22,8 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <cstdint>
+#include <cstddef>
 
 namespace {
 

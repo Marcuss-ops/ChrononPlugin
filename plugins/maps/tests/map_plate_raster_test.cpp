@@ -22,8 +22,8 @@ int g_failures = 0;
         }                                                                  \
     } while (0)
 
-const std::string kCountries = CHROMON_MAPS_COUNTRIES_GEOJSON;
-const std::string kItalyAdmin2 = CHROMON_MAPS_ITALY_ADMIN2_GEOJSON;
+const std::string kCountries = CHRONON_MAPS_COUNTRIES_GEOJSON;
+const std::string kItalyAdmin2 = CHRONON_MAPS_ITALY_ADMIN2_GEOJSON;
 
 bool same_pixels(const cv::Mat& a, const cv::Mat& b) {
     if (a.size() != b.size() || a.type() != b.type()) return false;
