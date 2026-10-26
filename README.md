@@ -21,10 +21,14 @@ ChrononPlugin/
       src/                          # rasterizzatore tile/plate, geo core
       tests/                        # test C++ del plugin
       tools/                        # tool Python (cartography, parità raster)
+    effects/              # ricette specialistiche immagine/video, renderizzate dal core
+    typography/           # preset testuali e authoring delle caption
 ```
 
-Famiglie previste dal catalogo (slot futuri, nessun codice ancora):
-`charts`, `particles`, `cinematic`, `typography`, `transitions`, `documentary`.
+Le ricette d'effetto e glow vivono in `plugins/effects`; preset tipografici e
+authoring delle caption vivono in `plugins/typography`. Chronon3D mantiene le
+primitive di rendering, shaping e animazione generiche e le implementazioni
+Vulkan condivise. Il dominio geo è mantenuto solo in `plugins/maps`.
 
 ## Regole
 
@@ -52,3 +56,12 @@ Le dipendenze del plugin mappe (OpenCV headers, Clipper2, nlohmann_json)
 sono risolte da `plugins/maps/CMakeLists.txt`; in assenza di un OpenCV di
 sistema, `plugins/maps/tools/bootstrap_opencv_dev.sh` materializza gli header
 in `plugins/maps/third_party/` (path locale, non versionato).
+
+Per buildare senza OpenCV e usare il checkout Chronon3D vicino:
+
+```bash
+cmake -S . -B build/specialized -DCHRONONPLUGIN_BUILD_MAPS=OFF \
+  -DCHRONONPLUGIN_BUILD_EFFECTS=ON -DCHRONONPLUGIN_BUILD_TYPOGRAPHY=ON \
+  -DCHRONON3D_SOURCE_DIR=../Chronon3d
+cmake --build build/specialized -j12
+```
