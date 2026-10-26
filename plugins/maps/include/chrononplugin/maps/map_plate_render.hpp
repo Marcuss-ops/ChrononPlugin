@@ -1,22 +1,35 @@
 #pragma once
 
-// Chronon3D native map-plate rendering — SCAFFOLDING (TICKET-MAPS-NATIVE-PORT).
+// Chronon3D native map-plate rendering — TICKET-MAPS-NATIVE-PORT.
 //
-// The dynamic-map overlays of the overlay-throughput golden case are rendered
-// today by an external Python process (ChrononTemplate/tools/map/
-// render_dynamic_map_overlay.py, 797 lines) launched per item by the Go
-// orchestrator. That process is the single most expensive item class in the
-// render window (20,66 s and 37,37 s wall per map in the v3 golden run,
-// TICKET-OVERLAY-THROUGHPUT-100-MIN) while phrase items cost 2–5 s. The port
-// brings map rendering natively into the render pipeline: tile pyramid →
-// textured planes → flyover camera → labels, on the same GPU lanes as every
-// other item class.
+// The dynamic-map overlays of the overlay-throughput golden case were
+// rendered by an external Python process launched per item by the Go
+// orchestrator. This is the native port of that renderer: tile pyramid →
+// plate sampling → flyover camera → labels, plus the certified
+// chronon.dynamic-map-telemetry.v1 summary the cache identity requires.
 //
-// This header is the CONTRACT of that port, landed early so the call sites,
-// the cache identity and the certified-telemetry rules have a stable shape to
-// compile against. The implementation is a fail-closed stub: no frame and no
-// telemetry is ever fabricated (godlike/07), every attempt reports
-// kNotImplemented until the port phases in.
+// NATIVE SUBSET (anything else is refused, never guessed):
+//  * the closed encoder profiles libx264/veryfast/23 and h264_nvenc/p6/15
+//    (NVENC still requires the OpenCL sampler, so today: libx264/cpu);
+//  * sampler "cpu" (the native vector plates are CPU-sampled);
+//  * the BASE flyOVER composition only: `map_animation` empty — composed
+//    scenes (routes, regions, editorial scenes, ...) are refused by name;
+//  * camera_animation "slow_approach" (the product "dive" shot) over one
+//    anchor: an explicit `camera_anchor` or the single unique pin;
+//  * label_animation "none"; pin labels are drawn as camera-aligned labels;
+//  * no per-pin spoken schedules, route_timing or country_context tours;
+//  * at most five unique pins (the product route budget, fail-closed above).
+//
+// Planning provenance fields (map_group, composition_family, typography, ...)
+// are accepted and carry no pixel semantics.
+//
+// Fail-closed contract:
+//  - a malformed request is rejected with kInvalidRequest;
+//  - a well-formed request outside the native subset returns kNotImplemented
+//    (the consumer keeps its own fallback policy);
+//  - the implementation never installs an output artifact unless it can also
+//    produce the complete certified telemetry for it (godlike/07): outputs
+//    are staged and only renamed into place together with the summary.
 
 #include <cstdint>
 #include <string>
@@ -26,24 +39,30 @@ namespace chrononplugin::maps {
 /// Outcome of one native map-plate render attempt.
 enum class MapPlateStatus : std::uint8_t {
     kOk = 0,
-    /// The port has not landed yet — see docs/tickets/TICKET-MAPS-NATIVE-PORT.md.
+    /// The requested composition is outside the native subset — see above.
     kNotImplemented,
     /// The request fails contract validation (non-positive output size,
-    /// empty plate id, no pins): rejected, never guessed.
+    /// empty plate id, no pins, inconsistent media contract): rejected,
+    /// never guessed.
     kInvalidRequest,
+    /// The render or its telemetry failed internally; no artifact installed.
+    kRenderFailed,
 };
 
-/// One map-plate render request. `payload_json` is the same immutable
-/// dynamic-map payload the Python renderer consumes today (pins, camera,
-/// composition), so the native port can be certified against it frame by
-/// frame before the orchestrator cuts over.
+/// One map-plate render request. `payload_json` is the immutable dynamic-map
+/// payload (width, height, fps_num, fps_den, duration_us, pins, encoder
+/// profile, sampler, camera/label animation), so the native port can be
+/// certified against the same inputs the Python renderer consumed.
 struct MapPlateRequest {
-    std::string plate_id;      // registry plate id (e.g. "plate-new-orleans"), not a URL
-    std::string payload_json;  // immutable dynamic-map payload (pins/camera/composition)
+    std::string plate_id;       // registry plate id (e.g. "plate-new-orleans"), not a URL
+    std::string payload_json;   // immutable dynamic-map payload
     int output_width = 0;
     int output_height = 0;
     double frame_rate = 0.0;
     std::int64_t frame_count = 0;
+    std::string output_video;    // staged then renamed into place with the summary
+    std::string summary_output;  // chronon.dynamic-map-telemetry.v1 JSON
+    std::string raw_frames_dir;  // optional: also dump frame_%06d.raw (parity gates)
 };
 
 /// Result of one render attempt. `error` is empty if and only if
@@ -54,13 +73,6 @@ struct MapPlateRenderResult {
 };
 
 /// Renders one map plate natively.
-///
-/// Fail-closed contract:
-///  - a malformed request is rejected with kInvalidRequest;
-///  - until the port lands, every accepted request returns kNotImplemented;
-///  - the implementation never writes an output artifact unless it can also
-///    produce the certified telemetry the cache identity requires
-///    (chronon.dynamic-map-telemetry.v1).
 [[nodiscard]] MapPlateRenderResult render_map_plate(const MapPlateRequest& request);
 
 }  // namespace chrononplugin::maps
