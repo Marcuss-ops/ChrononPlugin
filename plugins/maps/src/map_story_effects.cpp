@@ -289,12 +289,26 @@ void draw_documentary_concept(cv::Mat& frame, const std::string& concept_id,
             else title("SUPPLY CHAIN FLOW // RELATIVE INTENSITY");
         }
     } else if (concept_id == "thermal_heatmap_overlay") {
-        cv::Mat heat(frame.size(), CV_8UC1, cv::Scalar(0));
-        for (std::size_t i = 0; i < points.size(); ++i)
-            cv::circle(heat, p(i), 48 + static_cast<int>((i*17)%30), cv::Scalar(80 + (i*37)%170), cv::FILLED, cv::LINE_AA);
-        cv::GaussianBlur(heat, heat, {0,0}, 32);
-        cv::Mat color; cv::applyColorMap(heat, color, cv::COLORMAP_INFERNO);
-        cv::addWeighted(frame, 0.62, color, 0.38, 0, frame);
+        // Incident locations do not change per frame: bake the blurred color
+        // field once and reuse it while the camera and dataset stay fixed.
+        thread_local std::vector<int> cached_key;
+        thread_local cv::Mat cached_color;
+        std::vector<int> key{frame.cols, frame.rows};
+        key.reserve(2 + points.size() * 2);
+        for (const auto& point : points) {
+            key.push_back(point.x);
+            key.push_back(point.y);
+        }
+        if (key != cached_key) {
+            cv::Mat heat(frame.size(), CV_8UC1, cv::Scalar(0));
+            for (std::size_t i = 0; i < points.size(); ++i)
+                cv::circle(heat, p(i), 48 + static_cast<int>((i * 17) % 30),
+                           cv::Scalar(80 + (i * 37) % 170), cv::FILLED, cv::LINE_AA);
+            cv::GaussianBlur(heat, heat, {0, 0}, 32);
+            cv::applyColorMap(heat, cached_color, cv::COLORMAP_INFERNO);
+            cached_key = std::move(key);
+        }
+        cv::addWeighted(frame, 0.62, cached_color, 0.38, 0, frame);
         title("INCIDENT DENSITY // SYNTHETIC SAMPLE");
     } else if (concept_id == "night_vision_infrared") {
         cv::Mat gray, lut(1, 256, CV_8UC3);

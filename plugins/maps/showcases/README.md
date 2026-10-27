@@ -43,6 +43,11 @@ their procedural shapes as measured geographic analysis. The four-panel,
 pitch/tilt and great-circle examples are also viewport/image-space previews,
 not independent pitched-camera terrain renders.
 
+The synthetic heatmap field is baked once per point set and viewport, then
+reused across frames. On the current CPU runner, a warm-cache 960×540, 40-frame
+heatmap render measured 1.26 s after this change, down from 2.66 s before it;
+this is a local comparison, not a hardware-independent performance guarantee.
+
 Every render applies a precomputed screen-space vignette and deterministic
 frame grain. The route's `start_us`/`travel_us` schedule uses the same render
 timebase as an accompanying narration or soundtrack.
