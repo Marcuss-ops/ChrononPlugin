@@ -1,0 +1,23 @@
+{
+  "width": 1280,
+  "height": 720,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4500000,
+  "basemap": "esri_sat",
+  "camera_anchor": [43.7, 11.35],
+  "camera_start_zoom": 6.5,
+  "camera_end_zoom": 7.0,
+  "map_animation": "multi_leg_flight",
+  "route_timing": {"start_us": 250000, "travel_us": 3600000},
+  "route_altitudes_m": [0, 380, 920, 180],
+  "pins": [
+    {"id": "roma", "label": "Roma", "latitude": 41.9028, "longitude": 12.4964},
+    {"id": "firenze", "label": "Firenze", "latitude": 43.7696, "longitude": 11.2558},
+    {"id": "bologna", "label": "Bologna", "latitude": 44.4949, "longitude": 11.3426},
+    {"id": "venezia", "label": "Venezia", "latitude": 45.4408, "longitude": 12.3155}
+  ],
+  "documentary_finish": {"vignette": 0.34, "grain": 0.03},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

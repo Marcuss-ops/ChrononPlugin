@@ -1,0 +1,25 @@
+{
+  "width": 1280,
+  "height": 720,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 3500000,
+  "camera_motion_duration_us": 3000000,
+  "basemap": "esri_sat",
+  "camera_animation": "exponential_dive",
+  "map_animation": "satellite_dive_lock",
+  "camera_anchor": [41.8902, 12.4922],
+  "camera_start_zoom": 7.0,
+  "camera_end_zoom": 18.2,
+  "pins": [
+    {"id": "colosseo", "label": "Colosseo", "latitude": 41.8902, "longitude": 12.4922}
+  ],
+  "overlay_hud": {
+    "show_telemetry": true,
+    "target_label": "COLOSSEO // TARGET LOCK",
+    "reticle_style": "military_brackets"
+  },
+  "documentary_finish": {"vignette": 0.36, "grain": 0.035},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

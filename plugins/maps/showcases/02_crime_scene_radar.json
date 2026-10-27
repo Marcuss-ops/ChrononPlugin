@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 720,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "basemap": "esri_sat",
+  "camera_anchor": [45.184, 9.158],
+  "camera_start_zoom": 11.2,
+  "camera_end_zoom": 12.2,
+  "map_animation": "crime_scene_radar",
+  "crime_scene_radius_m": 1500,
+  "pins": [
+    {"id": "pavia", "label": "Pavia", "latitude": 45.184, "longitude": 9.158}
+  ],
+  "overlay_hud": {
+    "show_telemetry": true,
+    "target_label": "AREA DI RICERCA",
+    "reticle_style": "military_brackets"
+  },
+  "documentary_finish": {"vignette": 0.38, "grain": 0.035},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

@@ -71,6 +71,7 @@ add_library(chrononplugin_maps STATIC
     src/map_plate_render.cpp
     src/map_plate_telemetry.cpp
     src/map_route_render.cpp
+    src/map_story_effects.cpp
     src/territory_change.cpp
 )
 
@@ -161,6 +162,8 @@ install(TARGETS maps_dynamic_map_render
 install(FILES "${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog")
 install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
+install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
 # The renderer and its default test suite are native C++. Python is only an
 # optional reference oracle for cross-implementation parity checks; it is not

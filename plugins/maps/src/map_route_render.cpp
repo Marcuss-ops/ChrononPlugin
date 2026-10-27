@@ -91,7 +91,8 @@ void draw_animated_pin(cv::Mat& frame, cv::Point position, int frame_index,
 
 void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
                          std::pair<double, double> camera_anchor, double zoom,
-                         double progress, int frame_index) {
+                         double progress, int frame_index,
+                         const std::vector<double>& altitude_m) {
     if (stops.size() < 2) return;
     progress = std::clamp(progress, 0.0, 1.0);
     std::vector<std::vector<cv::Point>> segments;
@@ -108,21 +109,37 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     const std::size_t active_segment = std::min(
         static_cast<std::size_t>(scaled), segments.size() - 1);
     const double segment_progress = progress >= 1.0 ? 1.0 : scaled - active_segment;
+    cv::Mat route_glow(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
     for (std::size_t i = 0; i < active_segment; ++i) {
         cv::polylines(frame, segments[i], false, kGold, 4, cv::LINE_AA);
+        cv::polylines(route_glow, segments[i], false, kGold, 12, cv::LINE_AA);
     }
     const auto& active = segments[active_segment];
     const std::size_t active_count = std::max<std::size_t>(
         2, static_cast<std::size_t>(std::ceil(segment_progress * (active.size() - 1))) + 1);
     std::vector<cv::Point> partial(active.begin(),
         active.begin() + static_cast<std::ptrdiff_t>(std::min(active_count, active.size())));
-    if (partial.size() >= 2) cv::polylines(frame, partial, false, kGold, 4, cv::LINE_AA);
+    if (partial.size() >= 2) {
+        cv::polylines(frame, partial, false, kGold, 4, cv::LINE_AA);
+        cv::polylines(route_glow, partial, false, kGold, 14, cv::LINE_AA);
+    }
+    cv::Mat bloom;
+    cv::GaussianBlur(route_glow, bloom, {17, 17}, 0.0);
+    cv::addWeighted(frame, 1.0, bloom, 0.32, 0.0, frame);
 
     for (std::size_t i = 0; i < stops.size(); ++i) {
         const auto [x, y] = geo_to_screen(stops[i].latitude, stops[i].longitude,
                                           camera_anchor, zoom,
                                           frame.cols, frame.rows);
         const cv::Point point(x, y);
+        if (!altitude_m.empty()) {
+            const double altitude = altitude_m[std::min(i, altitude_m.size() - 1)];
+            const int stem = std::clamp(static_cast<int>(std::nearbyint(14.0 + altitude / 1000.0 * 5.0)),
+                                        14, 78);
+            const cv::Point top(point.x, point.y - stem);
+            cv::line(frame, point, top, cv::Scalar(186, 224, 238), 2, cv::LINE_AA);
+            cv::line(frame, top, {top.x + 15, top.y}, cv::Scalar(186, 224, 238), 2, cv::LINE_AA);
+        }
         cv::circle(frame, point, 10, kPaper, cv::FILLED, cv::LINE_AA);
         cv::circle(frame, point, 7, kInk, cv::FILLED, cv::LINE_AA);
         cv::circle(frame, point, 4, kGold, cv::FILLED, cv::LINE_AA);

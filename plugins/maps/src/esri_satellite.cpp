@@ -1,7 +1,6 @@
 #include "chrononplugin/maps/esri_satellite.hpp"
 
 #include "chrononplugin/maps/map_camera.hpp"
-#include "chrononplugin/maps/map_plate_compose.hpp"
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -137,14 +136,11 @@ void EsriSatellitePyramid::collect_plate_keys(
 }
 
 void EsriSatellitePyramid::prefetch_trajectory(
-    double lat, double lon, double start_zoom, double end_zoom,
-    int frame_count, int width, int height) {
+    double lat, double lon, const std::vector<double>& frame_zooms,
+    int width, int height) {
     const auto started = std::chrono::steady_clock::now();
     std::set<std::tuple<int, std::int64_t, std::int64_t>> keys;
-    const int motion_frames = std::max(2, frame_count);
-    for (int frame = 0; frame < frame_count; ++frame) {
-        const double zoom = builder_dive_zoom(start_zoom, end_zoom,
-                                               motion_frames, frame);
+    for (const double zoom : frame_zooms) {
         const int lo = static_cast<int>(std::floor(zoom));
         const double t = zoom - lo;
         const double alpha = t * t * (3.0 - 2.0 * t);

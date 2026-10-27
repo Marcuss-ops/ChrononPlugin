@@ -14,7 +14,10 @@
 //  * sampler "cpu" (the native vector plates are CPU-sampled);
 //  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
 //    World Imagery tiles, OpenCV continuous pyramid sampler);
-//  * base flyover or the native `route_line` composition;
+//  * native documentary compositions: `satellite_dive_lock`,
+//    `crime_scene_radar`, `multi_leg_flight`, `territory_polygon_wipe`;
+//  * exponential or product slow-approach camera easing, HUD telemetry,
+//    pulsing geodesic radius, GeoJSON territory wipe, vignette and film grain;
 //  * camera_animation "slow_approach" (the product "dive" shot) over one
 //    anchor: an explicit `camera_anchor` or the single unique pin;
 //  * label_animation "none"; pin labels are drawn as camera-aligned labels;

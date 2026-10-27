@@ -7,6 +7,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 
 namespace chrononplugin::maps {
 
@@ -20,8 +21,8 @@ public:
     /// Collect every tile sampled by the deterministic camera path and fetch
     /// cache misses concurrently before video encoding starts (HTTP/2 when
     /// the Esri edge negotiates it, otherwise curl's HTTP/1.1 parallel mode).
-    void prefetch_trajectory(double lat, double lon, double start_zoom,
-                             double end_zoom, int frame_count,
+    void prefetch_trajectory(double lat, double lon,
+                             const std::vector<double>& frame_zooms,
                              int width, int height);
     [[nodiscard]] std::int64_t network_fetches() const noexcept { return network_fetches_; }
     [[nodiscard]] std::int64_t bytes_downloaded() const noexcept { return bytes_downloaded_; }

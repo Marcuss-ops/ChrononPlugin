@@ -18,7 +18,8 @@ struct MapRouteStop {
 /// progress is clamped to [0, 1].
 void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
                          std::pair<double, double> camera_anchor, double zoom,
-                         double progress, int frame_index);
+                         double progress, int frame_index,
+                         const std::vector<double>& altitude_m = {});
 
 /// Draws one editorial location pin with a live OpenCV pulse.
 void draw_animated_pin(cv::Mat& frame, cv::Point position, int frame_index,
