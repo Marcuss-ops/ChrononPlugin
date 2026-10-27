@@ -24,7 +24,7 @@ endif()
 # Prefer a complete system OpenCV package. The bootstrap prefix is deliberately
 # header/static-only, so importing its distro CMake config would point at shared
 # objects that the development packages do not contain.
-find_package(OpenCV QUIET COMPONENTS core imgproc)
+find_package(OpenCV QUIET COMPONENTS core imgproc imgcodecs)
 if(OpenCV_FOUND)
     set(_opencv_libs ${OpenCV_LIBS})
     set(_opencv_includes ${OpenCV_INCLUDE_DIRS})
@@ -32,9 +32,10 @@ else()
     set(_opencv_prefix "${CMAKE_CURRENT_SOURCE_DIR}/third_party/opencv-dev/prefix/usr")
     set(_opencv_libdir "${_opencv_prefix}/lib/x86_64-linux-gnu")
     if(NOT EXISTS "${_opencv_libdir}/libopencv_core.a"
-       OR NOT EXISTS "${_opencv_libdir}/libopencv_imgproc.a")
+       OR NOT EXISTS "${_opencv_libdir}/libopencv_imgproc.a"
+       OR NOT EXISTS "${_opencv_libdir}/libopencv_imgcodecs.a")
         message(FATAL_ERROR
-            "OpenCV core/imgproc not found; install OpenCV or run tools/bootstrap_opencv_dev.sh")
+            "OpenCV core/imgproc/imgcodecs not found; install full OpenCV")
     endif()
     add_library(chrononplugin_opencv_core STATIC IMPORTED)
     set_target_properties(chrononplugin_opencv_core PROPERTIES
@@ -42,19 +43,23 @@ else()
     add_library(chrononplugin_opencv_imgproc STATIC IMPORTED)
     set_target_properties(chrononplugin_opencv_imgproc PROPERTIES
         IMPORTED_LOCATION "${_opencv_libdir}/libopencv_imgproc.a")
+    add_library(chrononplugin_opencv_imgcodecs STATIC IMPORTED)
+    set_target_properties(chrononplugin_opencv_imgcodecs PROPERTIES
+        IMPORTED_LOCATION "${_opencv_libdir}/libopencv_imgcodecs.a")
     # The static OpenCV bootstrap was built against the TBB 2 task ABI, which
     # the system libtbb.so.12 (TBB 2021) no longer exports. Link libtbb.so.2.
     find_library(_tbb2_lib NAMES libtbb.so.2)
     if(NOT _tbb2_lib)
         message(FATAL_ERROR "libtbb.so.2 not found; required by the static OpenCV bootstrap")
     endif()
-    set(_opencv_libs chrononplugin_opencv_imgproc chrononplugin_opencv_core ${_tbb2_lib})
+    set(_opencv_libs chrononplugin_opencv_imgcodecs chrononplugin_opencv_imgproc chrononplugin_opencv_core ${_tbb2_lib})
     set(_opencv_includes
         "${_opencv_prefix}/include/opencv4"
         "${_opencv_prefix}/include/x86_64-linux-gnu/opencv4")
 endif()
 
 add_library(chrononplugin_maps STATIC
+    src/esri_satellite.cpp
     src/feature_query.cpp
     src/geo_boolean.cpp
     src/geojson.cpp
@@ -65,6 +70,7 @@ add_library(chrononplugin_maps STATIC
     src/map_plate_raster.cpp
     src/map_plate_render.cpp
     src/map_plate_telemetry.cpp
+    src/map_route_render.cpp
     src/territory_change.cpp
 )
 
@@ -156,53 +162,57 @@ install(FILES "${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog")
 install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
+# The renderer and its default test suite are native C++. Python is only an
+# optional reference oracle for cross-implementation parity checks; it is not
+# needed to configure, build, or run ChrononPlugin maps.
+option(CHRONONPLUGIN_ENABLE_PYTHON_MAP_REFERENCE_TESTS
+    "Enable optional Python reference and cartography tests" OFF)
+if(CHRONONPLUGIN_ENABLE_PYTHON_MAP_REFERENCE_TESTS)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    set(_cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography")
+    set(_map_reference "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/tools/map")
 
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-set(_cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography")
-add_test(NAME maps_cartography_geodesy
-    COMMAND "${Python3_EXECUTABLE}" "${_cartography}/map_cartography.py" --self-test)
-set_tests_properties(maps_cartography_geodesy PROPERTIES
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME maps_dynamic_tile_pyramid_offline
-    COMMAND "${Python3_EXECUTABLE}" "${_cartography}/test_dynamic_tile_pyramid_suite.py" --offline)
-set_tests_properties(maps_dynamic_tile_pyramid_offline PROPERTIES
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    SKIP_RETURN_CODE 77
-    TIMEOUT 300)
+    add_test(NAME maps_cartography_geodesy
+        COMMAND "${Python3_EXECUTABLE}" "${_cartography}/map_cartography.py" --self-test)
+    set_tests_properties(maps_cartography_geodesy PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# Bit-exact parity of the native rasterizer against the Python reference.
-# Skips (77) when the reference renderer or the boundary catalog is absent,
-# so the plugin stays independently buildable.
-add_test(NAME maps_raster_parity_check
-    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_raster_check.py"
-        --dump-tool $<TARGET_FILE:maps_raster_parity_dump>
-        --python-reference "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/tools/map"
-        --catalog "${CHRONON_MAPS_CATALOG_DIR}"
-        --cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography")
-set_tests_properties(maps_raster_parity_check PROPERTIES
-    SKIP_RETURN_CODE 77
-    TIMEOUT 600)
+    add_test(NAME maps_dynamic_tile_pyramid_offline
+        COMMAND "${Python3_EXECUTABLE}" "${_cartography}/test_dynamic_tile_pyramid_suite.py" --offline)
+    set_tests_properties(maps_dynamic_tile_pyramid_offline PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        SKIP_RETURN_CODE 77
+        TIMEOUT 300)
 
-# Bit-exact parity of camera/motion and label primitives against the Python
-# reference closures. Skips (77) when the reference modules are absent.
-add_test(NAME maps_camera_label_parity_check
-    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_camera_label_check.py"
-        --dump-tool $<TARGET_FILE:maps_camera_label_parity_dump>
-        --python-reference "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/tools/map"
-        --cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography")
-set_tests_properties(maps_camera_label_parity_check PROPERTIES
-    SKIP_RETURN_CODE 77
-    TIMEOUT 600)
+    # Bit-exact checks against the former Python implementation. These are
+    # opt-in development oracles; the native renderer has no Python runtime
+    # dependency.
+    add_test(NAME maps_raster_parity_check
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_raster_check.py"
+            --dump-tool $<TARGET_FILE:maps_raster_parity_dump>
+            --python-reference "${_map_reference}"
+            --catalog "${CHRONON_MAPS_CATALOG_DIR}"
+            --cartography "${_cartography}")
+    set_tests_properties(maps_raster_parity_check PROPERTIES
+        SKIP_RETURN_CODE 77
+        TIMEOUT 600)
 
-# Bit-exact composite parity: native flyover frames vs the Python product
-# functions (shot builder + sampler + labels). Skips (77) when the reference
-# modules are absent.
-add_test(NAME maps_composite_parity_check
-    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_composite_check.py"
-        --render-tool $<TARGET_FILE:maps_dynamic_map_render>
-        --python-reference "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/tools/map"
-        --cartography "${CMAKE_CURRENT_SOURCE_DIR}/tools/cartography"
-        --catalog "${CHRONON_MAPS_CATALOG_DIR}")
-set_tests_properties(maps_composite_parity_check PROPERTIES
-    SKIP_RETURN_CODE 77
-    TIMEOUT 600)
+    add_test(NAME maps_camera_label_parity_check
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_camera_label_check.py"
+            --dump-tool $<TARGET_FILE:maps_camera_label_parity_dump>
+            --python-reference "${_map_reference}"
+            --cartography "${_cartography}")
+    set_tests_properties(maps_camera_label_parity_check PROPERTIES
+        SKIP_RETURN_CODE 77
+        TIMEOUT 600)
+
+    add_test(NAME maps_composite_parity_check
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/map_native/parity_composite_check.py"
+            --render-tool $<TARGET_FILE:maps_dynamic_map_render>
+            --python-reference "${_map_reference}"
+            --cartography "${_cartography}"
+            --catalog "${CHRONON_MAPS_CATALOG_DIR}")
+    set_tests_properties(maps_composite_parity_check PROPERTIES
+        SKIP_RETURN_CODE 77
+        TIMEOUT 600)
+endif()

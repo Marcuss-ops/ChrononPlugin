@@ -12,8 +12,9 @@
 //  * the closed encoder profiles libx264/veryfast/23 and h264_nvenc/p6/15
 //    (NVENC still requires the OpenCL sampler, so today: libx264/cpu);
 //  * sampler "cpu" (the native vector plates are CPU-sampled);
-//  * the BASE flyOVER composition only: `map_animation` empty — composed
-//    scenes (routes, regions, editorial scenes, ...) are refused by name;
+//  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
+//    World Imagery tiles, OpenCV continuous pyramid sampler);
+//  * base flyover or the native `route_line` composition;
 //  * camera_animation "slow_approach" (the product "dive" shot) over one
 //    anchor: an explicit `camera_anchor` or the single unique pin;
 //  * label_animation "none"; pin labels are drawn as camera-aligned labels;

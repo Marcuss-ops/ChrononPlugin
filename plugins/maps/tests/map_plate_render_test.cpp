@@ -99,8 +99,11 @@ int main() {
     CHECK(refused_pin.status == MapPlateStatus::kNotImplemented);
     CHECK(refused_pin.error.find("color") != std::string::npos);
 
-    // Compositions outside the base flyover are refused BY NAME.
-    CHECK(render_map_plate(request_for(single_pin_with("\"map_animation\":\"route_line\"")))
+    // Unknown map compositions are refused; route_line is now natively ported.
+    CHECK(render_map_plate(request_for(single_pin_with("\"map_animation\":\"3d_orbit\"")))
+              .status == MapPlateStatus::kNotImplemented);
+    CHECK(render_map_plate(request_for(single_pin_with(
+              "\"relief_overlay\":\"made_up_style\"")))
               .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(
                               single_pin_with("\"pin_timing\":[{\"start_us\":0,\"end_us\":1}]")))
@@ -135,7 +138,7 @@ int main() {
     CHECK(render_map_plate(request_for(six_pins.dump())).status ==
           MapPlateStatus::kInvalidRequest);
 
-    // Multi-pin tours need an explicit anchor until the tour is ported.
+    // Multi-pin routes need an explicit anchor.
     const std::string tour_payload =
         "{\"width\":64,\"height\":36,\"pins\":["
         "{\"latitude\":41.9,\"longitude\":12.5,\"id\":\"a\"},"
@@ -180,6 +183,24 @@ int main() {
                 CHECK(summary.at("renderer_fingerprint") ==
                       chrononplugin::maps::native_renderer_fingerprint());
             }
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // A live three-stop route is rendered entirely in native C++/OpenCV.
+        const std::string route_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"route_line\","
+            "\"camera_anchor\":[41.9028,12.4964],\"camera_start_zoom\":5.8,"
+            "\"camera_end_zoom\":6.1,\"pins\":["
+            "{\"id\":\"roma\",\"label\":\"Roma\",\"latitude\":41.9028,\"longitude\":12.4964},"
+            "{\"id\":\"firenze\",\"label\":\"Firenze\",\"latitude\":43.7696,\"longitude\":11.2558},"
+            "{\"id\":\"venezia\",\"label\":\"Venezia\",\"latitude\":45.4408,\"longitude\":12.3155}]}";
+        const auto route = render_map_plate(request_for(route_payload));
+        CHECK(route.status == MapPlateStatus::kOk);
+        if (route.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
         }
         std::remove("/tmp/map_plate_render_test_out.mp4");
         std::remove("/tmp/map_plate_render_test_out.telemetry.json");

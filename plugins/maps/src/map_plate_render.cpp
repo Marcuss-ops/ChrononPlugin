@@ -18,12 +18,15 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "chrononplugin/maps/map_camera.hpp"
 #include "chrononplugin/maps/map_label_render.hpp"
 #include "chrononplugin/maps/map_plate_compose.hpp"
 #include "chrononplugin/maps/map_plate_raster.hpp"
 #include "chrononplugin/maps/map_plate_telemetry.hpp"
+#include "chrononplugin/maps/map_route_render.hpp"
+#include "chrononplugin/maps/esri_satellite.hpp"
 #include <cstdint>
 #include <cstddef>
 
@@ -214,9 +217,9 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
 [[nodiscard]] bool supported_semantics(const nlohmann::json& payload,
                                        std::string& error) {
     const std::string map_animation = payload.value("map_animation", "");
-    if (!map_animation.empty()) {
+    if (!map_animation.empty() && map_animation != "route_line") {
         error = "map composition '" + map_animation +
-                "' is not ported natively yet (only the base flyover is)";
+                "' is not ported natively yet (supported: base flyover, route_line)";
         return false;
     }
     const auto& pin_timing = payload.find("pin_timing");
@@ -238,9 +241,9 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         return false;
     }
     const std::string basemap = payload.value("basemap", "");
-    if (!basemap.empty() && basemap != "chronon_editorial") {
+    if (!basemap.empty() && basemap != "chronon_editorial" && basemap != "esri_sat") {
         error = "basemap '" + basemap + "' is not available natively: the "
-                "native renderer draws the editorial vector basemap only";
+                "native renderer supports Esri World Imagery and chronon_editorial";
         return false;
     }
     return true;
@@ -354,6 +357,11 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     if (!normalize_pins(payload.value("pins", nlohmann::json::array()), pins, error)) {
         return {MapPlateStatus::kInvalidRequest, error};
     }
+    const std::string map_animation = payload.value("map_animation", "");
+    if (map_animation == "route_line" && pins.size() < 2) {
+        return {MapPlateStatus::kInvalidRequest,
+                "route_line requires at least two grounded map pins"};
+    }
     std::pair<double, double> anchor{pins.front().lat, pins.front().lon};
     if (payload.contains("camera_anchor")) {
         const auto& a = payload.at("camera_anchor");
@@ -383,11 +391,15 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     const auto total_start = std::chrono::steady_clock::now();
     const auto prepare_start = total_start;
     std::unique_ptr<VectorPlateRaster> raster;
+    std::unique_ptr<EsriSatellitePyramid> satellite;
     try {
         raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
+        if (payload.value("basemap", "chronon_editorial") == "esri_sat") {
+            satellite = std::make_unique<EsriSatellitePyramid>();
+        }
     } catch (const std::exception& exc) {
         return {MapPlateStatus::kRenderFailed,
-                std::string("cannot prepare the vector plates: ") + exc.what()};
+                std::string("cannot prepare native map sources: ") + exc.what()};
     }
     const double prepare_ms = seconds_since(prepare_start) * 1e3;
 
@@ -429,17 +441,45 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             builder_dive_zoom(start_zoom, end_zoom,
                               static_cast<int>(request.frame_count), static_cast<int>(f));
         const auto compose_start = std::chrono::steady_clock::now();
-        cv::Mat frame = compose_sample_continuous(*raster, anchor.first, anchor.second,
-                                                  zoom, request.output_width,
-                                                  request.output_height, &stats);
+        cv::Mat frame = satellite
+            ? satellite->sample(anchor.first, anchor.second, zoom,
+                                request.output_width, request.output_height)
+            : compose_sample_continuous(*raster, anchor.first, anchor.second,
+                                        zoom, request.output_width,
+                                        request.output_height, &stats);
         compose_wall += seconds_since(compose_start);
-        for (const Pin& pin : pins) {
-            const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
-                                              request.output_width,
-                                              request.output_height);
-            draw_camera_aligned_label(frame, {static_cast<double>(x),
-                                              static_cast<double>(y)},
-                                      pin.text, {255, 255, 255});
+        if (map_animation == "route_line") {
+            std::vector<MapRouteStop> stops;
+            stops.reserve(pins.size());
+            for (const Pin& pin : pins) {
+                stops.push_back({pin.text, pin.lat, pin.lon});
+            }
+            const double progress = static_cast<double>(f) /
+                static_cast<double>(std::max<std::int64_t>(1, request.frame_count - 1));
+            draw_animated_route(frame, stops, anchor, zoom, progress,
+                                static_cast<int>(f));
+        } else {
+            for (const Pin& pin : pins) {
+                const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
+                                                  request.output_width,
+                                                  request.output_height);
+                draw_camera_aligned_label(frame, {static_cast<double>(x),
+                                                  static_cast<double>(y)},
+                                          pin.text, {255, 255, 255});
+            }
+        }
+        if (satellite) {
+            const std::string credit = "Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community";
+            const double scale = std::max(0.25, std::min(0.36, request.output_width / 1920.0 * 0.34));
+            int baseline = 0;
+            const cv::Size extent = cv::getTextSize(credit, cv::FONT_HERSHEY_SIMPLEX,
+                                                     scale, 1, &baseline);
+            const cv::Point origin(std::max(8, request.output_width - extent.width - 12),
+                                   request.output_height - 10);
+            cv::putText(frame, credit, origin, cv::FONT_HERSHEY_SIMPLEX, scale,
+                        cv::Scalar(0, 0, 0), 3, cv::LINE_AA);
+            cv::putText(frame, credit, origin, cv::FONT_HERSHEY_SIMPLEX, scale,
+                        cv::Scalar(248, 246, 236), 1, cv::LINE_AA);
         }
         if (!request.raw_frames_dir.empty()) {
             const std::string path = request.raw_frames_dir + "/frame_" +
@@ -471,10 +511,10 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         output_bytes = static_cast<std::int64_t>(std::ftell(staged));
         std::fclose(staged);
     }
-    // Certified telemetry — the counters account for every tile the native
-    // renderer produced (all rendered locally on the editorial basemap).
+    // Certified telemetry — distinguish downloaded/cached imagery tiles from
+    // locally rasterized editorial tiles.
     DynamicMapTelemetry telemetry;
-    telemetry.basemap = "chronon_editorial";
+    telemetry.basemap = satellite ? "esri_sat" : "chronon_editorial";
     telemetry.frames = request.frame_count;
     telemetry.width = request.output_width;
     telemetry.height = request.output_height;
@@ -491,21 +531,24 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     telemetry.gpu_map_sampler = sampler;
     telemetry.encoder_preset = profile.preset;
     telemetry.encoder_quality = profile.quality;
-    telemetry.tile.disk_cache_hits = 0;
-    telemetry.tile.disk_cache_misses = stats.tile_renders;
-    telemetry.tile.network_fetches = 0;
+    telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : 0;
+    telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : stats.tile_renders;
+    telemetry.tile.network_fetches = satellite ? satellite->network_fetches() : 0;
+    telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;
     telemetry.tile.fallbacks = 0;
-    telemetry.tile.rendered_locally = stats.tile_renders;
+    telemetry.tile.rendered_locally = satellite ? 0 : stats.tile_renders;
     telemetry.tile.fetch_ms = compose_wall * 1e3;
     telemetry.tile.prefetch_ms = 0.0;
-    telemetry.tile.prefetch_tiles_requested = stats.tile_renders;
+    const std::int64_t tile_count = satellite
+        ? satellite->disk_hits() + satellite->network_fetches() : stats.tile_renders;
+    telemetry.tile.prefetch_tiles_requested = tile_count;
     telemetry.tile.prefetch_tiles_memory_hits = 0;
     telemetry.plates.prepare_ms = prepare_ms;
     telemetry.plates.compose_ms = compose_wall * 1e3;
-    telemetry.plates.plate_count = stats.plate_composes;
-    telemetry.plates.plate_bytes = stats.plate_bytes;
-    telemetry.plates.required_tile_count = stats.tile_renders;
-    telemetry.plates.prefetch_tiles_fetched = stats.tile_renders;
+    telemetry.plates.plate_count = satellite ? satellite->plate_count() : stats.plate_composes;
+    telemetry.plates.plate_bytes = satellite ? satellite->plate_bytes() : stats.plate_bytes;
+    telemetry.plates.required_tile_count = tile_count;
+    telemetry.plates.prefetch_tiles_fetched = tile_count;
     telemetry.plates.prefetch_tiles_memory_hits = 0;
 
     std::string summary_json;

@@ -41,12 +41,20 @@ Vulkan condivise. Il dominio geo è mantenuto solo in `plugins/maps`.
   una camera) senza implementare il proprio interpolatore cinematico.
 - Il plugin maps è il **renderer dinamico ufficiale** delle mappe
   (`maps_dynamic_map_render`, lane unica dal 2026-10-26): il renderer Python
-  di ChrononTemplate è stato ritirato. La pipeline è
+  di ChrononTemplate è stato ritirato; build, runtime e test C++ predefiniti
+  non richiedono Python. La pipeline è
   `dominio → geometria → animazioni campionate → renderer mappe → overlay`;
   il renderer espone il contratto CLI e la telemetria certificata
   (`chronon.dynamic-map-telemetry.v1`) senza duplicare i contratti di
   estensione. Le composizioni non ancora portate falliscono chiuso con errore
   tipizzato; le gate di parità bit-exact vivono in `plugins/maps/tools/map_native/`.
+- Per le mappe satellitari `basemap: "esri_sat"` usa Esri World Imagery in
+  runtime: le tile Web Mercator vengono scaricate in C++, decodificate e
+  ricampionate con OpenCV, poi riutilizzate dalla cache
+  `~/.cache/chrononplugin/maps/esri_sat`. Una traiettoria Roma a zoom 18 ha
+  scaricato 787 tile mancanti in circa 37 s; il render caldo successivo dei
+  120 frame è terminato in 1,7 s. La cache evita che la rete rallenti i render
+  successivi.
 - Ogni plugin è costruibile senza ricompilare Chronon3D.
 
 ## Build e test
@@ -56,6 +64,12 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
+
+I test di riferimento che confrontano in modo bit-exact il renderer nativo
+con l'implementazione Python precedente sono opzionali e si attivano con
+`-DCHRONONPLUGIN_ENABLE_PYTHON_MAP_REFERENCE_TESTS=ON`. Non fanno parte del
+runtime di Chronon.
+
 **Requisito**: `libtbb.so.2` (ABI TBB 2) quando si usa la OpenCV statica del
 bootstrap; con un OpenCV di sistema completo il requisito non si applica.
 
