@@ -197,6 +197,168 @@ void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons
     put_hud(frame, "TERRITORIO // " + label, {28, 38}, 0.66);
 }
 
+void draw_documentary_concept(cv::Mat& frame, const std::string& concept_id,
+                              const std::vector<cv::Point>& points,
+                              double progress, int frame_index,
+                              double parameter) {
+    if (points.empty()) return;
+    progress = std::clamp(progress, 0.0, 1.0);
+    const auto p = [&](std::size_t i) -> cv::Point {
+        return points[std::min(i, points.size() - 1)];
+    };
+    const cv::Scalar cyan(255, 225, 92), amber(28, 165, 255), red(70, 72, 255);
+    const cv::Point c = p(0);
+    cv::Mat overlay(frame.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+    auto route = [&] {
+        if (points.size() > 1) {
+            cv::polylines(overlay, points, false, amber, 4, cv::LINE_AA);
+            cv::polylines(frame, points, false, cyan, 2, cv::LINE_AA);
+        }
+    };
+    auto title = [&](const char* text) { put_hud(frame, text, {26, 40}, 0.62); };
+    if (concept_id == "cell_tower_triangulation" || concept_id == "frontline_fluid_corridor") {
+        std::vector<cv::Mat> masks;
+        for (std::size_t i = 0; i < points.size(); ++i) {
+            cv::Mat mask(frame.size(), CV_8UC1, cv::Scalar(0));
+            const int radius = std::max(60, std::min(frame.cols, frame.rows) / 3);
+            if (concept_id == "cell_tower_triangulation") {
+                const double angle = static_cast<double>(i) * 120.0 + frame_index * 0.15;
+                cv::ellipse(mask, p(i), {radius, radius}, angle, -60, 60, 255, cv::FILLED, cv::LINE_AA);
+            } else {
+                const cv::Point end = i + 1 < points.size() ? p(i + 1) : p(i);
+                cv::line(mask, p(i), end, 255, radius / 2, cv::LINE_AA);
+            }
+            masks.push_back(std::move(mask));
+            cv::circle(frame, p(i), 7, concept_id == "cell_tower_triangulation" ? cyan : red, cv::FILLED, cv::LINE_AA);
+        }
+        cv::Mat common = masks.front().clone();
+        for (std::size_t i = 1; i < masks.size(); ++i) cv::bitwise_and(common, masks[i], common);
+        if (concept_id == "cell_tower_triangulation") {
+            cv::Mat tint(frame.size(), CV_8UC3, cv::Scalar(20, 235, 90));
+            tint.copyTo(overlay, common);
+            cv::addWeighted(frame, 1.0, overlay, 0.24, 0, frame);
+            title("SIGNAL ANALYSIS // OVERLAP ESTIMATE");
+        } else {
+            cv::Mat contours; cv::Canny(common, contours, 40, 120);
+            cv::Mat glow; cv::cvtColor(contours, glow, cv::COLOR_GRAY2BGR);
+            cv::GaussianBlur(glow, glow, {15, 15}, 0);
+            cv::addWeighted(frame, 1.0, glow, 0.8, 0, frame);
+            title("FRONTLINE // SCHEMATIC BUFFER ZONE");
+        }
+    } else if (concept_id == "isochrone_travel_bubble") {
+        for (int i = 3; i >= 1; --i) {
+            const double t = std::clamp(progress * 3.0 - (3 - i), 0.0, 1.0);
+            std::vector<cv::Point> ring;
+            const double r = (55.0 + 42.0 * i) * t;
+            for (int a = 0; a < 48; ++a) {
+                const double q = 2 * kPi * a / 48.0;
+                const double wobble = 1.0 + 0.11 * std::sin(3*q + i) + 0.06 * std::cos(5*q);
+                ring.emplace_back(cvRound(c.x + r*wobble*std::cos(q)), cvRound(c.y + r*wobble*std::sin(q)));
+            }
+            cv::polylines(frame, ring, true, i == 1 ? cv::Scalar(80, 230, 100) : i == 2 ? amber : red, 2, cv::LINE_AA);
+        }
+        title("ISOCHRONE PREVIEW // ROAD NETWORK DATA REQUIRED");
+    } else if (concept_id == "timeline_suspect_trail" || concept_id == "subsea_cable_glow_network" ||
+               concept_id == "great_circle_polar_route" || concept_id == "port_hub_radial_burst" ||
+               concept_id == "pipeline_energy_flow" || concept_id == "supply_chain_artery_pulse") {
+        if (points.size() > 1) {
+            const std::size_t count = std::max<std::size_t>(2, static_cast<std::size_t>(1 + progress * (points.size()-1)));
+            std::vector<cv::Point> partial(points.begin(), points.begin() + std::min(count, points.size()));
+            cv::polylines(overlay, partial, false, concept_id == "pipeline_energy_flow" ? red : amber,
+                          concept_id == "supply_chain_artery_pulse" ? 8 : 4, cv::LINE_AA);
+            if (concept_id == "pipeline_energy_flow") {
+                cv::Mat dashed(frame.size(), CV_8UC3, cv::Scalar(0,0,0));
+                for (std::size_t i = 1; i < partial.size(); ++i)
+                    if ((i + static_cast<std::size_t>(frame_index / 2)) % 4 < 2)
+                        cv::line(dashed, partial[i-1], partial[i], amber, 4, cv::LINE_AA);
+                overlay = dashed;
+            }
+            cv::Mat glow; cv::GaussianBlur(overlay, glow, {19,19}, 0);
+            cv::addWeighted(frame, 1.0, glow, 0.75, 0, frame);
+            cv::addWeighted(frame, 1.0, overlay, 0.82, 0, frame);
+            const cv::Point head = partial.back();
+            cv::circle(frame, head, 8, cyan, cv::FILLED, cv::LINE_AA);
+            if (concept_id == "timeline_suspect_trail") {
+                const int minutes = static_cast<int>(progress * 29);
+                char stamp[64]; std::snprintf(stamp, sizeof(stamp), "14:%02d  /  MOVEMENT TRACE", 23 + minutes);
+                title(stamp);
+            } else if (concept_id == "subsea_cable_glow_network") title("GLOBAL CABLE ROUTE // ILLUSTRATIVE");
+            else if (concept_id == "great_circle_polar_route") title("GREAT CIRCLE ROUTE // SPHERICAL PREVIEW");
+            else if (concept_id == "port_hub_radial_burst") title("HUB CONNECTIVITY // ROUTE PREVIEW");
+            else if (concept_id == "pipeline_energy_flow") title("ENERGY FLOW // SCHEMATIC");
+            else title("SUPPLY CHAIN FLOW // RELATIVE INTENSITY");
+        }
+    } else if (concept_id == "thermal_heatmap_overlay") {
+        cv::Mat heat(frame.size(), CV_8UC1, cv::Scalar(0));
+        for (std::size_t i = 0; i < points.size(); ++i)
+            cv::circle(heat, p(i), 48 + static_cast<int>((i*17)%30), cv::Scalar(80 + (i*37)%170), cv::FILLED, cv::LINE_AA);
+        cv::GaussianBlur(heat, heat, {0,0}, 32);
+        cv::Mat color; cv::applyColorMap(heat, color, cv::COLORMAP_INFERNO);
+        cv::addWeighted(frame, 0.62, color, 0.38, 0, frame);
+        title("INCIDENT DENSITY // SYNTHETIC SAMPLE");
+    } else if (concept_id == "night_vision_infrared") {
+        cv::Mat gray, lut(1, 256, CV_8UC3);
+        cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+        for (int i=0;i<256;++i) lut.at<cv::Vec3b>(0,i) = cv::Vec3b(i/5, i, i/8);
+        cv::Mat green(frame.size(), CV_8UC3);
+        for (int y=0;y<gray.rows;++y) for(int x=0;x<gray.cols;++x) { const auto v=gray.at<unsigned char>(y,x); green.at<cv::Vec3b>(y,x)=lut.at<cv::Vec3b>(0,v); }
+        frame = green;
+        for (int y=0;y<frame.rows;y+=4) cv::line(frame,{0,y},{frame.cols,y},{0,24,0},1);
+        cv::circle(frame,c,62,cyan,1,cv::LINE_AA); cv::line(frame,{c.x-85,c.y},{c.x+85,c.y},cyan,1);
+        title("NIGHT VISION // SURVEILLANCE MODE");
+    } else if (concept_id == "naval_chokepoint_exclusion") {
+        const int r = std::max(40, std::min(frame.cols,frame.rows)/5);
+        const double alpha = 0.45 + 0.3*std::sin(frame_index*0.18);
+        cv::circle(overlay,c,r,red,3,cv::LINE_AA); cv::circle(overlay,c,r*2/3,red,2,cv::LINE_AA);
+        cv::addWeighted(frame,1.0,overlay,alpha,0,frame);
+        if(points.size()>1) cv::polylines(frame,points,false,cyan,4,cv::LINE_AA);
+        title("MARITIME CHOKEPOINT // SCHEMATIC ZONE");
+    } else if (concept_id == "missile_arc_ballistic") {
+        if(points.size()>1) {
+            const cv::Point a=p(0), b=p(1); std::vector<cv::Point> arc;
+            for(int i=0;i<=100;++i){double t=i/100.0; arc.emplace_back(cvRound(a.x+(b.x-a.x)*t),cvRound(a.y+(b.y-a.y)*t-4*parameter*t*(1-t)));}
+            cv::polylines(overlay,arc,false,amber,4,cv::LINE_AA); cv::Mat glow; cv::GaussianBlur(overlay,glow,{17,17},0); cv::addWeighted(frame,1,glow,.8,0,frame); cv::addWeighted(frame,1,overlay,.9,0,frame);
+            const auto q=arc[std::min<std::size_t>(100,static_cast<std::size_t>(progress*100))]; cv::line(frame,q,{q.x,q.y+static_cast<int>(parameter*4*progress*(1-progress))},cyan,1); cv::circle(frame,q,7,amber,cv::FILLED,cv::LINE_AA);
+        } title("TRAJECTORY VISUALIZATION // NOT TO SCALE");
+    } else if (concept_id == "multi_camera_split_matrix") {
+        const int w=frame.cols/2,h=frame.rows/2; cv::Mat source=frame.clone();
+        for(int i=0;i<4;++i){cv::Rect r((i%2)*w,(i/2)*h,w,h); cv::Mat panel; cv::resize(source(r),panel,r.size()); panel.copyTo(frame(r)); cv::rectangle(frame,r,cyan,2,cv::LINE_AA); cv::putText(frame,"SITE 0"+std::to_string(i+1),{r.x+14,r.y+26},cv::FONT_HERSHEY_SIMPLEX,.55,cyan,1,cv::LINE_AA);}
+        title("MULTI-SITE MATRIX // SINGLE VIEWPORT PREVIEW");
+    } else if (concept_id == "air_defense_interception_dome") {
+        const cv::Size axes(std::max(40,frame.cols/7),std::max(20,frame.rows/5));
+        for(int i=4;i>=1;--i) cv::ellipse(overlay,c,{axes.width*i/4,axes.height*i/4},0,0,360,cv::Scalar(50,50,255),1,cv::LINE_AA);
+        cv::addWeighted(frame,1,overlay,.5,0,frame); cv::line(frame,{c.x-axes.width,c.y},{c.x+axes.width,c.y},cyan,1); title("COVERAGE ENVELOPE // SCHEMATIC");
+    } else if (concept_id == "satellite_before_after_split") {
+        cv::Mat old=frame.clone(); cv::Mat gray; cv::cvtColor(old,gray,cv::COLOR_BGR2GRAY); cv::cvtColor(gray,old,cv::COLOR_GRAY2BGR);
+        const int split=static_cast<int>(frame.cols*progress); old(cv::Rect(0,0,std::max(1,split),frame.rows)).copyTo(frame(cv::Rect(0,0,std::max(1,split),frame.rows)));
+        cv::line(frame,{split,0},{split,frame.rows},cv::Scalar(255,255,255),3,cv::LINE_AA); title("BEFORE / AFTER STYLE PREVIEW // SAME IMAGERY SOURCE");
+    } else if (concept_id == "topographic_contour_rise") {
+        cv::Mat gray,edges; cv::cvtColor(frame,gray,cv::COLOR_BGR2GRAY); cv::Canny(gray,edges,55,100); cv::Mat glow; cv::cvtColor(edges,glow,cv::COLOR_GRAY2BGR); cv::addWeighted(frame,1,glow,.55,0,frame); title("RELIEF CONTOUR STYLE // DEM DATA REQUIRED");
+    } else if (concept_id == "flood_sea_level_inundation") {
+        const int level=static_cast<int>(progress*frame.rows); cv::rectangle(overlay,{0,frame.rows-level},{frame.cols,frame.rows},cv::Scalar(220,120,20),cv::FILLED); cv::addWeighted(frame,1,overlay,.30,0,frame); cv::line(frame,{0,frame.rows-level},{frame.cols,frame.rows-level},cyan,3); title("SEA LEVEL RISE // ELEVATION MODEL REQUIRED");
+    } else if (concept_id == "wildfire_burn_scar_expansion") {
+        const int rx=static_cast<int>((20+progress*frame.cols/2)), ry=static_cast<int>((12+progress*frame.rows/3));
+        cv::ellipse(overlay,c,{rx,ry},-20,0,360,cv::Scalar(22,22,22),cv::FILLED,cv::LINE_AA); cv::ellipse(overlay,c,{rx,ry},-20,0,360,amber,4,cv::LINE_AA); cv::addWeighted(frame,1,overlay,.68,0,frame); title("BURN SCAR EXPANSION // SCHEMATIC");
+    } else if (concept_id == "cinematic_anchor_pitch_tilt") {
+        const float inset = static_cast<float>(frame.cols * 0.16 * progress);
+        const std::vector<cv::Point2f> source{{0,0}, {static_cast<float>(frame.cols-1),0},
+            {static_cast<float>(frame.cols-1),static_cast<float>(frame.rows-1)},
+            {0,static_cast<float>(frame.rows-1)}};
+        const std::vector<cv::Point2f> target{{inset,0},
+            {static_cast<float>(frame.cols-1)-inset,0},
+            {static_cast<float>(frame.cols-1),static_cast<float>(frame.rows-1)},
+            {0,static_cast<float>(frame.rows-1)}};
+        cv::Mat warped;
+        cv::warpPerspective(frame, warped, cv::getPerspectiveTransform(source, target),
+                            frame.size(), cv::INTER_LINEAR, cv::BORDER_REPLICATE);
+        frame = std::move(warped);
+        title("CAMERA PITCH TRANSITION // IMAGE WARP PREVIEW");
+    } else {
+        // Explicit fallback keeps unsupported identifiers visually obvious during authoring.
+        title("DOCUMENTARY MAP CONCEPT");
+    }
+}
+
 void apply_documentary_finish(cv::Mat& frame, int frame_index,
                               double vignette_strength, double grain_strength) {
     vignette_strength = std::clamp(vignette_strength, 0.0, 0.8);

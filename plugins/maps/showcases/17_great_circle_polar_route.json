@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [56.0, -70.0], "camera_start_zoom": 1.5, "camera_end_zoom": 1.5,
+  "map_animation": "great_circle_polar_route", "pins": [{"id":"a","label":"LONDON","latitude":51.5,"longitude":0.0},{"id":"b","label":"ANCHORAGE","latitude":61.2,"longitude":-149.9}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [46.0, 10.0], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "topographic_contour_rise", "pins": [{"id":"a","label":"RELIEF","latitude":46.0,"longitude":10.0}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

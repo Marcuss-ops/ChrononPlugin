@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [45.46, 9.19], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "cell_tower_triangulation", "pins": [{"id":"a","label":"BTS 01","latitude":45.46,"longitude":9.19},{"id":"b","label":"BTS 02","latitude":45.49,"longitude":9.16},{"id":"c","label":"BTS 03","latitude":45.43,"longitude":9.15}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

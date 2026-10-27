@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [43.0, 8.0], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "subsea_cable_glow_network", "pins": [{"id":"a","label":"A","latitude":43.0,"longitude":8.0},{"id":"b","label":"B","latitude":43.2,"longitude":9.0},{"id":"c","label":"C","latitude":43.5,"longitude":10.0}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [32.0, 35.0], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "missile_arc_ballistic", "pins": [{"id":"a","label":"ORIGIN","latitude":32.0,"longitude":34.8},{"id":"b","label":"DEST","latitude":32.2,"longitude":35.2}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

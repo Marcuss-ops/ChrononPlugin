@@ -226,6 +226,16 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
     static const std::set<std::string> animations = {
         "", "route_line", "satellite_dive_lock", "crime_scene_radar",
         "multi_leg_flight", "territory_polygon_wipe",
+        "cell_tower_triangulation", "isochrone_travel_bubble",
+        "timeline_suspect_trail", "thermal_heatmap_overlay",
+        "night_vision_infrared", "frontline_fluid_corridor",
+        "naval_chokepoint_exclusion", "missile_arc_ballistic",
+        "multi_camera_split_matrix", "air_defense_interception_dome",
+        "subsea_cable_glow_network", "supply_chain_artery_pulse",
+        "great_circle_polar_route", "port_hub_radial_burst",
+        "pipeline_energy_flow", "satellite_before_after_split",
+        "topographic_contour_rise", "flood_sea_level_inundation",
+        "wildfire_burn_scar_expansion", "cinematic_anchor_pitch_tilt",
     };
     if (animations.find(map_animation) == animations.end()) {
         error = "map composition '" + map_animation +
@@ -278,6 +288,24 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         (!payload.contains("territory_feature") ||
          !payload.at("territory_feature").is_string())) {
         error = "territory_polygon_wipe requires territory_feature";
+        return false;
+    }
+    static const std::set<std::string> routed = {
+        "timeline_suspect_trail", "subsea_cable_glow_network",
+        "supply_chain_artery_pulse", "great_circle_polar_route",
+        "port_hub_radial_burst", "pipeline_energy_flow",
+        "missile_arc_ballistic", "naval_chokepoint_exclusion",
+    };
+    if (routed.count(map_animation) &&
+        (!payload.contains("pins") || !payload.at("pins").is_array() ||
+         payload.at("pins").size() < 2)) {
+        error = map_animation + " requires at least two map pins";
+        return false;
+    }
+    if (map_animation == "cell_tower_triangulation" &&
+        (!payload.contains("pins") || !payload.at("pins").is_array() ||
+         payload.at("pins").size() < 3)) {
+        error = "cell_tower_triangulation requires at least three tower pins";
         return false;
     }
     if (payload.contains("overlay_hud") && !payload.at("overlay_hud").is_object()) {
@@ -402,7 +430,11 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         return {MapPlateStatus::kInvalidRequest, error};
     }
     const std::string map_animation = payload.value("map_animation", "");
-    if ((map_animation == "route_line" || map_animation == "multi_leg_flight") &&
+    if ((map_animation == "route_line" || map_animation == "multi_leg_flight" ||
+         map_animation == "timeline_suspect_trail" || map_animation == "subsea_cable_glow_network" ||
+         map_animation == "supply_chain_artery_pulse" || map_animation == "great_circle_polar_route" ||
+         map_animation == "port_hub_radial_burst" || map_animation == "pipeline_energy_flow" ||
+         map_animation == "missile_arc_ballistic" || map_animation == "naval_chokepoint_exclusion") &&
         pins.size() < 2) {
         return {MapPlateStatus::kInvalidRequest,
                 "route animation requires at least two grounded map pins"};
@@ -631,6 +663,17 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                                                   request.output_height);
                 draw_animated_pin(frame, {x, y}, static_cast<int>(f), hud_label);
             }
+        } else if (map_animation != "") {
+            std::vector<cv::Point> points;
+            points.reserve(pins.size());
+            for (const Pin& pin : pins) {
+                const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
+                                                  request.output_width,
+                                                  request.output_height);
+                points.emplace_back(x, y);
+            }
+            draw_documentary_concept(frame, map_animation, points,
+                linear_progress, static_cast<int>(f));
         } else {
             for (const Pin& pin : pins) {
                 const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,

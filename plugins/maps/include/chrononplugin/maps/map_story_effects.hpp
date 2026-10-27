@@ -29,4 +29,9 @@ void apply_documentary_finish(cv::Mat& frame, int frame_index,
 
 void apply_radial_motion_blur(cv::Mat& frame, double zoom_delta);
 
+void draw_documentary_concept(cv::Mat& frame, const std::string& concept_id,
+                              const std::vector<cv::Point>& points,
+                              double progress, int frame_index,
+                              double parameter = 1500.0);
+
 }  // namespace chrononplugin::maps

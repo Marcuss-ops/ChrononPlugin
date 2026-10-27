@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [48.85, 37.60], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "frontline_fluid_corridor", "pins": [{"id":"a","label":"A","latitude":48.84,"longitude":37.57},{"id":"b","label":"B","latitude":48.88,"longitude":37.60},{"id":"c","label":"C","latitude":48.82,"longitude":37.66}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

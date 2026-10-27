@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [40.7, 14.1], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "port_hub_radial_burst", "pins": [{"id":"a","label":"NAPOLI","latitude":40.7,"longitude":14.1},{"id":"b","label":"PALERMO","latitude":38.1,"longitude":13.36},{"id":"c","label":"BARI","latitude":41.1,"longitude":16.87},{"id":"d","label":"GENOVA","latitude":44.4,"longitude":8.94}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

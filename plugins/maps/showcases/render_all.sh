@@ -5,7 +5,7 @@ renderer=${1:-build/plugins/maps/maps_dynamic_map_render}
 output_dir=${2:-out/map-showcases}
 mkdir -p "$output_dir"
 
-for payload in plugins/maps/showcases/0*.json; do
+for payload in plugins/maps/showcases/*.json; do
   name=${payload##*/}
   name=${name%.json}
   video="$output_dir/$name.mp4"

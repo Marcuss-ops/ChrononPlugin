@@ -1,0 +1,9 @@
+{
+  "width": 960, "height": 540, "fps_num": 20, "fps_den": 1,
+  "duration_us": 2000000, "basemap": "esri_sat",
+  "camera_anchor": [44.0, 25.0], "camera_start_zoom": 7.2, "camera_end_zoom": 7.2,
+  "map_animation": "pipeline_energy_flow", "pins": [{"id":"a","label":"A","latitude":44.0,"longitude":25.0},{"id":"b","label":"B","latitude":44.4,"longitude":25.8},{"id":"c","label":"C","latitude":45.0,"longitude":26.3}],
+  "documentary_finish": {"vignette": 0.30, "grain": 0.02},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}
