@@ -393,9 +393,13 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     std::unique_ptr<VectorPlateRaster> raster;
     std::unique_ptr<EsriSatellitePyramid> satellite;
     try {
-        raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
         if (payload.value("basemap", "chronon_editorial") == "esri_sat") {
             satellite = std::make_unique<EsriSatellitePyramid>();
+            satellite->prefetch_trajectory(anchor.first, anchor.second,
+                start_zoom, end_zoom, static_cast<int>(request.frame_count),
+                request.output_width, request.output_height);
+        } else {
+            raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
         }
     } catch (const std::exception& exc) {
         return {MapPlateStatus::kRenderFailed,
@@ -537,19 +541,21 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;
     telemetry.tile.fallbacks = 0;
     telemetry.tile.rendered_locally = satellite ? 0 : stats.tile_renders;
-    telemetry.tile.fetch_ms = compose_wall * 1e3;
-    telemetry.tile.prefetch_ms = 0.0;
+    telemetry.tile.fetch_ms = satellite ? satellite->prefetch_ms() : compose_wall * 1e3;
+    telemetry.tile.prefetch_ms = satellite ? satellite->prefetch_ms() : 0.0;
     const std::int64_t tile_count = satellite
         ? satellite->disk_hits() + satellite->network_fetches() : stats.tile_renders;
+    const std::int64_t tile_cache_hits = satellite ? satellite->disk_hits() : 0;
+    const std::int64_t tile_fetched = satellite ? satellite->network_fetches() : stats.tile_renders;
     telemetry.tile.prefetch_tiles_requested = tile_count;
-    telemetry.tile.prefetch_tiles_memory_hits = 0;
+    telemetry.tile.prefetch_tiles_memory_hits = tile_cache_hits;
     telemetry.plates.prepare_ms = prepare_ms;
     telemetry.plates.compose_ms = compose_wall * 1e3;
     telemetry.plates.plate_count = satellite ? satellite->plate_count() : stats.plate_composes;
     telemetry.plates.plate_bytes = satellite ? satellite->plate_bytes() : stats.plate_bytes;
     telemetry.plates.required_tile_count = tile_count;
-    telemetry.plates.prefetch_tiles_fetched = tile_count;
-    telemetry.plates.prefetch_tiles_memory_hits = 0;
+    telemetry.plates.prefetch_tiles_fetched = tile_fetched;
+    telemetry.plates.prefetch_tiles_memory_hits = tile_cache_hits;
 
     std::string summary_json;
     if (!telemetry.emit(summary_json, error)) {

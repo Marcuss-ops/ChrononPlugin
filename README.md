@@ -51,10 +51,15 @@ Vulkan condivise. Il dominio geo è mantenuto solo in `plugins/maps`.
 - Per le mappe satellitari `basemap: "esri_sat"` usa Esri World Imagery in
   runtime: le tile Web Mercator vengono scaricate in C++, decodificate e
   ricampionate con OpenCV, poi riutilizzate dalla cache
-  `~/.cache/chrononplugin/maps/esri_sat`. Una traiettoria Roma a zoom 18 ha
-  scaricato 787 tile mancanti in circa 37 s; il render caldo successivo dei
-  120 frame è terminato in 1,7 s. La cache evita che la rete rallenti i render
-  successivi.
+  `~/.cache/chrononplugin/maps/esri_sat`. Il renderer calcola prima l'unione
+  esatta delle tile visibili lungo la traiettoria e scarica i cache miss con un
+  batch concorrente (fino a 32 trasferimenti; HTTP/2 quando negoziato dal CDN),
+  prima di avviare l'encoder. Un tuffo
+  Roma 5.2→17.8 a 120 frame ha richiesto 855 tile distribuite ai livelli 5–18
+  (24–77 per livello, non 855 allo zoom massimo): 15,6 MB scaricati in 1,0 s,
+  2,37 s end-to-end a cache fredda e 1,76 s a cache calda. L'edge testato ha
+  negoziato HTTP/1.1 anche con HTTP/2 richiesto. La variabile
+  `CHRONON_ESRI_TILE_CACHE_DIR` permette di scegliere un'altra cache.
 - Ogni plugin è costruibile senza ricompilare Chronon3D.
 
 ## Build e test
