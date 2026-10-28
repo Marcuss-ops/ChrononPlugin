@@ -59,11 +59,19 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/chrononplugin" TYPE FILE FILES "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/maps-renderer-catalog.v1.json")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/chrononplugin/maps-catalog" TYPE FILE FILES "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog/ne_50m_admin_0_countries.geojson")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/chrononplugin/maps-catalog/italy_admin" TYPE FILE FILES "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/chrononplugin/maps-catalog/italy_admin" TYPE FILE FILES "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT

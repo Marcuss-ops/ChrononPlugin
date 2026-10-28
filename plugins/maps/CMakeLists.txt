@@ -52,7 +52,39 @@ else()
     if(NOT _tbb2_lib)
         message(FATAL_ERROR "libtbb.so.2 not found; required by the static OpenCV bootstrap")
     endif()
-    set(_opencv_libs chrononplugin_opencv_imgcodecs chrononplugin_opencv_imgproc chrononplugin_opencv_core ${_tbb2_lib})
+    # The Debian static imgcodecs archive references its codec dependencies
+    # directly. This host ships runtime sonames only (no -dev symlinks) for
+    # several of them, so match the sonames explicitly and fail closed if one
+    # is absent instead of dying at link time with a symbol list.
+    find_library(_zlib_lib NAMES z libz.so.1)
+    find_library(_jpeg_lib NAMES libjpeg.so.8 jpeg)
+    find_library(_png_lib NAMES png libpng16.so.16 libpng.so.16)
+    find_library(_webp_lib NAMES libwebp.so.7 webp)
+    find_library(_tiff_lib NAMES libtiff.so.5 tiff)
+    find_library(_openjp2_lib NAMES libopenjp2.so.7 openjp2)
+    find_library(_gdal_lib NAMES libgdal.so.30 gdal PATHS /usr/lib /usr/lib/ogdi/4.1)
+    # imgcodecs also carries DICOM (GDCM) and OpenEXR decoders.
+    find_library(_exr_lib NAMES libIlmImf-2_5.so.25 IlmImf)
+    find_library(_iex_lib NAMES libIex-2_5.so.25 Iex)
+    find_library(_ilmthread_lib NAMES libIlmThread-2_5.so.25 IlmThread)
+    find_library(_half_lib NAMES libHalf-2_5.so.25 Half)
+    find_library(_gdcm_msff_lib NAMES libgdcmMSFF.so.3.0 gdcmMSFF)
+    find_library(_gdcm_common_lib NAMES libgdcmCommon.so.3.0 gdcmCommon)
+    find_library(_gdcm_dict_lib NAMES libgdcmDICT.so.3.0 gdcmDICT)
+    find_library(_gdcm_dsed_lib NAMES libgdcmDSED.so.3.0 gdcmDSED)
+    find_library(_gdcm_iod_lib NAMES libgdcmIOD.so.3.0 gdcmIOD)
+    foreach(_dep_lib _zlib_lib _jpeg_lib _png_lib _webp_lib _tiff_lib _openjp2_lib _gdal_lib
+            _exr_lib _iex_lib _ilmthread_lib _half_lib
+            _gdcm_msff_lib _gdcm_common_lib _gdcm_dict_lib _gdcm_dsed_lib _gdcm_iod_lib)
+        if(NOT ${_dep_lib})
+            message(FATAL_ERROR
+                "OpenCV codec dependency ${_dep_lib} not found; install the runtime library")
+        endif()
+    endforeach()
+    set(_opencv_libs chrononplugin_opencv_imgcodecs chrononplugin_opencv_imgproc chrononplugin_opencv_core
+        ${_tbb2_lib} ${_zlib_lib} ${_png_lib} ${_jpeg_lib} ${_webp_lib} ${_tiff_lib} ${_openjp2_lib} ${_gdal_lib}
+        ${_exr_lib} ${_iex_lib} ${_ilmthread_lib} ${_half_lib}
+        ${_gdcm_msff_lib} ${_gdcm_common_lib} ${_gdcm_dict_lib} ${_gdcm_dsed_lib} ${_gdcm_iod_lib})
     set(_opencv_includes
         "${_opencv_prefix}/include/opencv4"
         "${_opencv_prefix}/include/x86_64-linux-gnu/opencv4")
@@ -69,6 +101,7 @@ add_library(chrononplugin_maps STATIC
     src/map_plate_compose.cpp
     src/map_plate_raster.cpp
     src/map_plate_render.cpp
+    src/map_renderer_catalog.cpp
     src/map_plate_telemetry.cpp
     src/map_route_render.cpp
     src/map_story_effects.cpp
@@ -115,6 +148,15 @@ add_executable(maps_map_plate_render_test tests/map_plate_render_test.cpp)
 target_link_libraries(maps_map_plate_render_test PRIVATE chrononplugin_maps)
 add_test(NAME maps_map_plate_render_test COMMAND maps_map_plate_render_test)
 
+# The published vocabulary must match the renderer implementation. This is the
+# gate that keeps maps-renderer-catalog.v1.json honest for the repositories
+# that consume it (RenderingGen embeds the same file).
+add_executable(maps_renderer_catalog_test tests/map_renderer_catalog_test.cpp)
+target_link_libraries(maps_renderer_catalog_test PRIVATE chrononplugin_maps)
+target_compile_definitions(maps_renderer_catalog_test PRIVATE
+    CHRONONPLUGIN_MAPS_RENDERER_CATALOG="${CMAKE_CURRENT_SOURCE_DIR}/maps-renderer-catalog.v1.json")
+add_test(NAME maps_renderer_catalog_test COMMAND maps_renderer_catalog_test)
+
 # Boundary sources for the raster test: the same files the Python renderer
 # reads, from the ChrononTemplate catalog next to this workspace.
 add_executable(maps_map_plate_raster_test tests/map_plate_raster_test.cpp)
@@ -156,6 +198,10 @@ target_link_libraries(maps_dynamic_map_render PRIVATE chrononplugin_maps)
 include(GNUInstallDirs)
 install(TARGETS maps_dynamic_map_render
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+# The machine-readable renderer vocabulary travels with the binary: consumers
+# read the same catalog the renderer validates against.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/maps-renderer-catalog.v1.json"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin")
 # Only the two boundary sources map_plate_render reads (Natural Earth 50m
 # countries + geoBoundaries ITA ADM2): the ChrononTemplate catalog also holds
 # plates and fixtures that never belong in a runtime image.

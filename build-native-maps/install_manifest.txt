@@ -1,3 +1,5 @@
 /usr/local/bin/maps_dynamic_map_render
+/usr/local/share/chrononplugin/maps-renderer-catalog.v1.json
 /usr/local/share/chrononplugin/maps-catalog/ne_50m_admin_0_countries.geojson
 /usr/local/share/chrononplugin/maps-catalog/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson
+/usr/local/share/chrononplugin/maps-catalog/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson

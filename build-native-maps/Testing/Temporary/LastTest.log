@@ -1,10 +1,10 @@
-Start testing: Oct 26 12:21 UTC
+Start testing: Oct 28 09:17 UTC
 ----------------------------------------------------------
-1/10 Testing: maps_geo_core_test
-1/10 Test: maps_geo_core_test
+1/6 Testing: maps_geo_core_test
+1/6 Test: maps_geo_core_test
 Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_geo_core_test"
 Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_geo_core_test" start time: Oct 26 12:21 UTC
+"maps_geo_core_test" start time: Oct 28 09:17 UTC
 Output:
 ----------------------------------------------------------
 geo_core_test: PASS
@@ -12,63 +12,79 @@ geo_core_test: PASS
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"maps_geo_core_test" end time: Oct 26 12:21 UTC
+"maps_geo_core_test" end time: Oct 28 09:17 UTC
 "maps_geo_core_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-2/10 Testing: maps_map_plate_render_test
-2/10 Test: maps_map_plate_render_test
+2/6 Testing: maps_map_plate_render_test
+2/6 Test: maps_map_plate_render_test
 Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_render_test"
 Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_render_test" start time: Oct 26 12:21 UTC
+"maps_map_plate_render_test" start time: Oct 28 09:17 UTC
 Output:
 ----------------------------------------------------------
 map_plate_render: all checks passed
 <end of output>
-Test time =   1.04 sec
+Test time =   1.74 sec
 ----------------------------------------------------------
 Test Passed.
-"maps_map_plate_render_test" end time: Oct 26 12:21 UTC
+"maps_map_plate_render_test" end time: Oct 28 09:17 UTC
 "maps_map_plate_render_test" time elapsed: 00:00:01
 ----------------------------------------------------------
 
-3/10 Testing: maps_map_plate_raster_test
-3/10 Test: maps_map_plate_raster_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_raster_test"
+3/6 Testing: maps_renderer_catalog_test
+3/6 Test: maps_renderer_catalog_test
+Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_renderer_catalog_test"
 Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_raster_test" start time: Oct 26 12:21 UTC
+"maps_renderer_catalog_test" start time: Oct 28 09:17 UTC
 Output:
 ----------------------------------------------------------
-map_plate_raster: all checks passed
-<end of output>
-Test time =   0.26 sec
-----------------------------------------------------------
-Test Passed.
-"maps_map_plate_raster_test" end time: Oct 26 12:21 UTC
-"maps_map_plate_raster_test" time elapsed: 00:00:00
-----------------------------------------------------------
-
-4/10 Testing: maps_camera_label_test
-4/10 Test: maps_camera_label_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_camera_label_test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_camera_label_test" start time: Oct 26 12:21 UTC
-Output:
-----------------------------------------------------------
-map_camera/map_label_render: all checks passed
+map_renderer_catalog: all checks passed
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"maps_camera_label_test" end time: Oct 26 12:21 UTC
+"maps_renderer_catalog_test" end time: Oct 28 09:17 UTC
+"maps_renderer_catalog_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/6 Testing: maps_map_plate_raster_test
+4/6 Test: maps_map_plate_raster_test
+Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_raster_test"
+Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
+"maps_map_plate_raster_test" start time: Oct 28 09:17 UTC
+Output:
+----------------------------------------------------------
+map_plate_raster: all checks passed
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"maps_map_plate_raster_test" end time: Oct 28 09:17 UTC
+"maps_map_plate_raster_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/6 Testing: maps_camera_label_test
+5/6 Test: maps_camera_label_test
+Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_camera_label_test"
+Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
+"maps_camera_label_test" start time: Oct 28 09:17 UTC
+Output:
+----------------------------------------------------------
+map_camera/map_label_render: all checks passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"maps_camera_label_test" end time: Oct 28 09:17 UTC
 "maps_camera_label_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-5/10 Testing: maps_map_plate_telemetry_test
-5/10 Test: maps_map_plate_telemetry_test
+6/6 Testing: maps_map_plate_telemetry_test
+6/6 Test: maps_map_plate_telemetry_test
 Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_telemetry_test"
 Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_telemetry_test" start time: Oct 26 12:21 UTC
+"maps_map_plate_telemetry_test" start time: Oct 28 09:17 UTC
 Output:
 ----------------------------------------------------------
 map_plate_telemetry: all checks passed
@@ -76,106 +92,8 @@ map_plate_telemetry: all checks passed
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"maps_map_plate_telemetry_test" end time: Oct 26 12:21 UTC
+"maps_map_plate_telemetry_test" end time: Oct 28 09:17 UTC
 "maps_map_plate_telemetry_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-6/10 Testing: maps_cartography_geodesy
-6/10 Test: maps_cartography_geodesy
-Command: "/home/pierone/.local/bin/python3.11" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/cartography/map_cartography.py" "--self-test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps
-"maps_cartography_geodesy" start time: Oct 26 12:21 UTC
-Output:
-----------------------------------------------------------
-SKIP: the dynamic tile pyramid engine could not be imported
-SKIP: No module named 'numpy'; the bilinear, hillshade and relief-bake assertions need numpy and Pillow
-all 23 cartography geodesy assertions passed (raster half skipped)
-<end of output>
-Test time =   0.14 sec
-----------------------------------------------------------
-Test Passed.
-"maps_cartography_geodesy" end time: Oct 26 12:21 UTC
-"maps_cartography_geodesy" time elapsed: 00:00:00
-----------------------------------------------------------
-
-7/10 Testing: maps_dynamic_tile_pyramid_offline
-7/10 Test: maps_dynamic_tile_pyramid_offline
-Command: "/home/pierone/.local/bin/python3.11" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/cartography/test_dynamic_tile_pyramid_suite.py" "--offline"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps
-"maps_dynamic_tile_pyramid_offline" start time: Oct 26 12:21 UTC
-Output:
-----------------------------------------------------------
-SKIP: offline pyramid suite requires Python raster dependencies (No module named 'numpy')
-<end of output>
-Test time =   0.07 sec
-----------------------------------------------------------
-Test Passed.
-"maps_dynamic_tile_pyramid_offline" end time: Oct 26 12:21 UTC
-"maps_dynamic_tile_pyramid_offline" time elapsed: 00:00:00
-----------------------------------------------------------
-
-8/10 Testing: maps_raster_parity_check
-8/10 Test: maps_raster_parity_check
-Command: "/home/pierone/.local/bin/python3.11" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/map_native/parity_raster_check.py" "--dump-tool" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_raster_parity_dump" "--python-reference" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/tools/map" "--catalog" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog" "--cartography" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/cartography"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_raster_parity_check" start time: Oct 26 12:21 UTC
-Output:
-----------------------------------------------------------
-tile 5,17,11: identical
-tile 3,-1,2: identical
-tile 3,2,-1: identical
-tile 8,137,90: identical
-tile 4,0,0: identical
-plate 0 300x200@5: identical
-plate 1 256x256@3: identical
-plate 2 128x64@8: identical
-PARITY PASS: 8 raster(s) identical to the Python reference
-<end of output>
-Test time =   7.93 sec
-----------------------------------------------------------
-Test Passed.
-"maps_raster_parity_check" end time: Oct 26 12:21 UTC
-"maps_raster_parity_check" time elapsed: 00:00:07
-----------------------------------------------------------
-
-9/10 Testing: maps_camera_label_parity_check
-9/10 Test: maps_camera_label_parity_check
-Command: "/home/pierone/.local/bin/python3.11" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/map_native/parity_camera_label_check.py" "--dump-tool" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_camera_label_parity_dump" "--python-reference" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/tools/map" "--cartography" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/cartography"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_camera_label_parity_check" start time: Oct 26 12:21 UTC
-Output:
-----------------------------------------------------------
-smootherstep: 7 samples identical
-roll_bank: 7 samples identical
-camera poses: 13 identical
-geo_to_screen: 4 identical
-labels: 3 identical
-PARITY PASS: 34 sample(s) identical to the Python reference
-<end of output>
-Test time =   5.44 sec
-----------------------------------------------------------
-Test Passed.
-"maps_camera_label_parity_check" end time: Oct 26 12:21 UTC
-"maps_camera_label_parity_check" time elapsed: 00:00:05
-----------------------------------------------------------
-
-10/10 Testing: maps_composite_parity_check
-10/10 Test: maps_composite_parity_check
-Command: "/home/pierone/.local/bin/python3.11" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/map_native/parity_composite_check.py" "--render-tool" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_dynamic_map_render" "--python-reference" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/tools/map" "--cartography" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/cartography" "--catalog" "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_composite_parity_check" start time: Oct 26 12:21 UTC
-Output:
-----------------------------------------------------------
-rome-dive: 4 frame(s) identical
-naples-hold: 2 frame(s) identical
-two-pin-fade: 3 frame(s) identical
-PARITY PASS: 9 composite frame(s) identical to the Python reference
-<end of output>
-Test time =  12.04 sec
-----------------------------------------------------------
-Test Passed.
-"maps_composite_parity_check" end time: Oct 26 12:21 UTC
-"maps_composite_parity_check" time elapsed: 00:00:12
-----------------------------------------------------------
-
-End testing: Oct 26 12:21 UTC
+End testing: Oct 28 09:17 UTC

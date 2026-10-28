@@ -21,7 +21,7 @@ if ! ldconfig -p 2>/dev/null | grep -q 'libtbb.so.2 ' && \
 fi
 
 cd "$work"
-apt-get download libopencv-dev libopencv-core-dev libopencv-imgproc-dev
+apt-get download libopencv-dev libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev
 mkdir -p "$prefix"
 for package in ./*.deb; do
     dpkg-deb -x "$package" "$prefix"

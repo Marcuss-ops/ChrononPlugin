@@ -14,8 +14,11 @@
 //  * sampler "cpu" (the native vector plates are CPU-sampled);
 //  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
 //    World Imagery tiles, OpenCV continuous pyramid sampler);
-//  * native documentary compositions: `satellite_dive_lock`,
-//    `crime_scene_radar`, `multi_leg_flight`, `territory_polygon_wipe`;
+//  * the native documentary compositions published by
+//    `plugins/maps/maps-renderer-catalog.v1.json` (the single vocabulary
+//    source consumed by other repositories): `route_line`,
+//    `satellite_dive_lock`, `crime_scene_radar`, `multi_leg_flight`,
+//    `territory_polygon_wipe` plus the documentary concept gallery;
 //  * exponential or product slow-approach camera easing, HUD telemetry,
 //    pulsing geodesic radius, GeoJSON territory wipe, vignette and film grain;
 //  * camera_animation "slow_approach" (the product "dive" shot) over one
@@ -36,6 +39,7 @@
 //    are staged and only renamed into place together with the summary.
 
 #include <cstdint>
+#include <set>
 #include <string>
 
 namespace chrononplugin::maps {
@@ -78,5 +82,26 @@ struct MapPlateRenderResult {
 
 /// Renders one map plate natively.
 [[nodiscard]] MapPlateRenderResult render_map_plate(const MapPlateRequest& request);
+
+// ── Published renderer vocabulary ────────────────────────────────────────────
+//
+// These accessors are the C++ side of `maps-renderer-catalog.v1.json`: the
+// catalog is the machine-readable contract other repositories consume, and
+// `tests/map_renderer_catalog_test.cpp` fails when the two drift. The renderer
+// itself always validates against these sets, so the catalog cannot describe
+// a composition this binary refuses (or hide one it accepts).
+
+/// Map compositions the native renderer accepts. The empty string is the
+/// base flyover (no documentary composition).
+[[nodiscard]] const std::set<std::string>& supported_map_animations();
+
+/// Camera treatments the native renderer accepts.
+[[nodiscard]] const std::set<std::string>& supported_map_camera_animations();
+
+/// Label treatments the native renderer accepts.
+[[nodiscard]] const std::set<std::string>& supported_map_label_animations();
+
+/// Basemap styles the native renderer accepts (empty payload = chronon_editorial).
+[[nodiscard]] const std::set<std::string>& supported_map_basemaps();
 
 }  // namespace chrononplugin::maps

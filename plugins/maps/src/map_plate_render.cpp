@@ -223,21 +223,8 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
 [[nodiscard]] bool supported_semantics(const nlohmann::json& payload,
                                        std::string& error) {
     const std::string map_animation = payload.value("map_animation", "");
-    static const std::set<std::string> animations = {
-        "", "route_line", "satellite_dive_lock", "crime_scene_radar",
-        "multi_leg_flight", "territory_polygon_wipe",
-        "cell_tower_triangulation", "isochrone_travel_bubble",
-        "timeline_suspect_trail", "thermal_heatmap_overlay",
-        "night_vision_infrared", "frontline_fluid_corridor",
-        "naval_chokepoint_exclusion", "missile_arc_ballistic",
-        "multi_camera_split_matrix", "air_defense_interception_dome",
-        "subsea_cable_glow_network", "supply_chain_artery_pulse",
-        "great_circle_polar_route", "port_hub_radial_burst",
-        "pipeline_energy_flow", "satellite_before_after_split",
-        "topographic_contour_rise", "flood_sea_level_inundation",
-        "wildfire_burn_scar_expansion", "cinematic_anchor_pitch_tilt",
-    };
-    if (animations.find(map_animation) == animations.end()) {
+    if (supported_map_animations().find(map_animation) ==
+        supported_map_animations().end()) {
         error = "map composition '" + map_animation +
                 "' is not ported natively yet";
         return false;
@@ -273,7 +260,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         return false;
     }
     const std::string camera_animation = payload.value("camera_animation", "slow_approach");
-    if (camera_animation != "slow_approach" && camera_animation != "exponential_dive") {
+    if (supported_map_camera_animations().count(camera_animation) == 0) {
         error = "camera_animation must be slow_approach or exponential_dive";
         return false;
     }
@@ -318,7 +305,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         return false;
     }
     const std::string basemap = payload.value("basemap", "");
-    if (!basemap.empty() && basemap != "chronon_editorial" && basemap != "esri_sat") {
+    if (!basemap.empty() && supported_map_basemaps().count(basemap) == 0) {
         error = "basemap '" + basemap + "' is not available natively: the "
                 "native renderer supports Esri World Imagery and chronon_editorial";
         return false;
@@ -391,7 +378,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     // Camera/label animations.
     const std::string camera_animation = payload.value("camera_animation", "slow_approach");
     const std::string label_animation = payload.value("label_animation", "none");
-    if (label_animation != "none") {
+    if (supported_map_label_animations().count(label_animation) == 0) {
         return {MapPlateStatus::kNotImplemented,
                 "native map subset supports label_animation 'none' only, got '" +
                     label_animation + "'"};

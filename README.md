@@ -48,6 +48,11 @@ Vulkan condivise. Il dominio geo è mantenuto solo in `plugins/maps`.
   (`chronon.dynamic-map-telemetry.v1`) senza duplicare i contratti di
   estensione. Le composizioni non ancora portate falliscono chiuso con errore
   tipizzato; le gate di parità bit-exact vivono in `plugins/maps/tools/map_native/`.
+- Il vocabolario pubblico del renderer mappe vive in
+  `plugins/maps/maps-renderer-catalog.v1.json` (composizioni, camera, label,
+  basemap): è il file che gli altri repository incorporano come unica fonte
+  delle mappe, e `maps_renderer_catalog_test` fallisce se il catalogo e i set
+  C++ del renderer divergono. Non duplicare la lista altrove.
 - Per le mappe satellitari `basemap: "esri_sat"` usa Esri World Imagery in
   runtime: le tile Web Mercator vengono scaricate in C++, decodificate e
   ricampionate con OpenCV, poi riutilizzate dalla cache

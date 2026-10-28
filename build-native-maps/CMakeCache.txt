@@ -26,6 +26,9 @@ CHRONONPLUGIN_BUILD_MAPS:BOOL=ON
 //Build text authoring and caption recipes
 CHRONONPLUGIN_BUILD_TYPOGRAPHY:BOOL=OFF
 
+//Enable optional Python reference and cartography tests
+CHRONONPLUGIN_ENABLE_PYTHON_MAP_REFERENCE_TESTS:BOOL=OFF
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
 
@@ -265,7 +268,55 @@ Clipper2_DIR:PATH=Clipper2_DIR-NOTFOUND
 OpenCV_DIR:PATH=OpenCV_DIR-NOTFOUND
 
 //Path to a library.
+_exr_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libIlmImf-2_5.so.25
+
+//Path to a library.
+_gdal_lib:FILEPATH=/usr/lib/libgdal.so.30
+
+//Path to a library.
+_gdcm_common_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libgdcmCommon.so.3.0
+
+//Path to a library.
+_gdcm_dict_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libgdcmDICT.so.3.0
+
+//Path to a library.
+_gdcm_dsed_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libgdcmDSED.so.3.0
+
+//Path to a library.
+_gdcm_iod_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libgdcmIOD.so.3.0
+
+//Path to a library.
+_gdcm_msff_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libgdcmMSFF.so.3.0
+
+//Path to a library.
+_half_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libHalf-2_5.so.25
+
+//Path to a library.
+_iex_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libIex-2_5.so.25
+
+//Path to a library.
+_ilmthread_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libIlmThread-2_5.so.25
+
+//Path to a library.
+_jpeg_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libjpeg.so.8
+
+//Path to a library.
+_openjp2_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libopenjp2.so.7
+
+//Path to a library.
+_png_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libpng.so
+
+//Path to a library.
 _tbb2_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libtbb.so.2
+
+//Path to a library.
+_tiff_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libtiff.so.5
+
+//Path to a library.
+_webp_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libwebp.so.7
+
+//Path to a library.
+_zlib_lib:FILEPATH=/usr/lib/x86_64-linux-gnu/libz.so
 
 //The directory containing a CMake configuration file for nlohmann_json.
 nlohmann_json_DIR:PATH=/usr/lib/cmake/nlohmann_json

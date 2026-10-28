@@ -79,6 +79,25 @@ rule CXX_EXECUTABLE_LINKER__maps_map_plate_render_test_Release
 #############################################
 # Rule for compiling CXX files.
 
+rule CXX_COMPILER__maps_renderer_catalog_test_unscanned_Release
+  depfile = $DEP_FILE
+  deps = gcc
+  command = ${LAUNCHER}${CODE_CHECK}/usr/bin/c++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building CXX object $out
+
+
+#############################################
+# Rule for linking CXX executable.
+
+rule CXX_EXECUTABLE_LINKER__maps_renderer_catalog_test_Release
+  command = $PRE_LINK && /usr/bin/c++ $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking CXX executable $TARGET_FILE
+  restat = $RESTAT
+
+
+#############################################
+# Rule for compiling CXX files.
+
 rule CXX_COMPILER__maps_map_plate_raster_test_unscanned_Release
   depfile = $DEP_FILE
   deps = gcc
