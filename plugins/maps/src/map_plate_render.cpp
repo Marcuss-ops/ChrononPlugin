@@ -255,44 +255,30 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         error = "country_context map tours are not ported natively yet";
         return false;
     }
-    if (payload.value("area_glow_radius_km", 0.0) != 0.0) {
-        error = "area glow overlays are not ported natively yet";
-        return false;
-    }
     const std::string camera_animation = payload.value("camera_animation", "slow_approach");
     if (supported_map_camera_animations().count(camera_animation) == 0) {
         error = "camera_animation must be slow_approach or exponential_dive";
         return false;
     }
-    if (map_animation == "crime_scene_radar" &&
-        (!payload.contains("crime_scene_radius_m") ||
-         !std::isfinite(payload.value("crime_scene_radius_m", 0.0)) ||
-         payload.value("crime_scene_radius_m", 0.0) <= 0.0)) {
-        error = "crime_scene_radar requires a positive crime_scene_radius_m";
-        return false;
-    }
-    if (map_animation == "territory_polygon_wipe" &&
+    if (map_animation == "territory_glow_reveal" &&
         (!payload.contains("territory_feature") ||
          !payload.at("territory_feature").is_string())) {
-        error = "territory_polygon_wipe requires territory_feature";
+        error = "territory_glow_reveal requires territory_feature";
+        return false;
+    }
+    if (map_animation == "area_glow_pulse" &&
+        (!std::isfinite(payload.value("area_glow_radius_km", 0.0)) ||
+         payload.value("area_glow_radius_km", 0.0) <= 0.0)) {
+        error = "area_glow_pulse requires a positive area_glow_radius_km";
         return false;
     }
     static const std::set<std::string> routed = {
-        "timeline_suspect_trail", "subsea_cable_glow_network",
-        "supply_chain_artery_pulse", "great_circle_polar_route",
-        "port_hub_radial_burst", "pipeline_energy_flow",
-        "missile_arc_ballistic", "naval_chokepoint_exclusion",
+        "route_glow_reveal",
     };
     if (routed.count(map_animation) &&
         (!payload.contains("pins") || !payload.at("pins").is_array() ||
          payload.at("pins").size() < 2)) {
         error = map_animation + " requires at least two map pins";
-        return false;
-    }
-    if (map_animation == "cell_tower_triangulation" &&
-        (!payload.contains("pins") || !payload.at("pins").is_array() ||
-         payload.at("pins").size() < 3)) {
-        error = "cell_tower_triangulation requires at least three tower pins";
         return false;
     }
     if (payload.contains("overlay_hud") && !payload.at("overlay_hud").is_object()) {
@@ -418,10 +404,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     }
     const std::string map_animation = payload.value("map_animation", "");
     if ((map_animation == "route_line" || map_animation == "multi_leg_flight" ||
-         map_animation == "timeline_suspect_trail" || map_animation == "subsea_cable_glow_network" ||
-         map_animation == "supply_chain_artery_pulse" || map_animation == "great_circle_polar_route" ||
-         map_animation == "port_hub_radial_burst" || map_animation == "pipeline_energy_flow" ||
-         map_animation == "missile_arc_ballistic" || map_animation == "naval_chokepoint_exclusion") &&
+         map_animation == "route_glow_reveal") &&
         pins.size() < 2) {
         return {MapPlateStatus::kInvalidRequest,
                 "route animation requires at least two grounded map pins"};
@@ -543,7 +526,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         } else {
             raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
         }
-        if (map_animation == "territory_polygon_wipe") {
+        if (map_animation == "territory_glow_reveal") {
             const std::string path = base + "/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson";
             std::ifstream input(path);
             if (!input) throw std::runtime_error("cannot open territory GeoJSON: " + path);
@@ -616,7 +599,8 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         }
         const double linear_progress = static_cast<double>(f) /
             static_cast<double>(std::max<std::int64_t>(1, request.frame_count - 1));
-        if (map_animation == "route_line" || map_animation == "multi_leg_flight") {
+        if (map_animation == "route_line" || map_animation == "multi_leg_flight" ||
+            map_animation == "route_glow_reveal") {
             std::vector<MapRouteStop> stops;
             stops.reserve(pins.size());
             for (const Pin& pin : pins) {
@@ -641,7 +625,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             draw_crime_scene(frame, {pins.front().lat, pins.front().lon}, anchor,
                 zoom, payload.at("crime_scene_radius_m").get<double>(),
                 linear_progress, static_cast<int>(f), hud_label);
-        } else if (map_animation == "territory_polygon_wipe") {
+        } else if (map_animation == "territory_glow_reveal") {
             draw_territory_wipe(frame, territory_polygons, anchor, zoom,
                 linear_progress, payload.at("territory_feature").get<std::string>());
             for (const Pin& pin : pins) {
@@ -650,17 +634,16 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                                                   request.output_height);
                 draw_animated_pin(frame, {x, y}, static_cast<int>(f), hud_label);
             }
-        } else if (map_animation != "") {
-            std::vector<cv::Point> points;
-            points.reserve(pins.size());
-            for (const Pin& pin : pins) {
-                const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
-                                                  request.output_width,
-                                                  request.output_height);
-                points.emplace_back(x, y);
-            }
-            draw_documentary_concept(frame, map_animation, points,
-                linear_progress, static_cast<int>(f));
+        } else if (map_animation == "area_glow_pulse") {
+            const double latitude = pins.front().lat;
+            const double metres_per_pixel = 156543.03392 *
+                std::cos(latitude * 3.14159265358979323846 / 180.0) /
+                std::pow(2.0, zoom);
+            const double radius_pixels = payload.value("area_glow_radius_km", 0.0) *
+                1000.0 / std::max(1e-9, metres_per_pixel);
+            const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
+                anchor, zoom, request.output_width, request.output_height);
+            draw_area_glow(frame, {x, y}, radius_pixels, linear_progress);
         } else {
             for (const Pin& pin : pins) {
                 const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,

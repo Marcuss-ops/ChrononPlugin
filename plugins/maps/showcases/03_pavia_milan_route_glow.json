@@ -1,0 +1,22 @@
+{
+  "width": 1280,
+  "height": 720,
+  "fps_num": 24,
+  "fps_den": 1,
+  "duration_us": 6000000,
+  "camera_motion_duration_us": 4500000,
+  "basemap": "esri_sat",
+  "camera_animation": "slow_approach",
+  "camera_anchor": [45.35, 9.18],
+  "camera_start_zoom": 7.4,
+  "camera_end_zoom": 8.8,
+  "map_animation": "route_glow_reveal",
+  "route_timing": {"start_us": 400000, "travel_us": 4800000},
+  "pins": [
+    {"id": "pavia", "label": "Pavia", "latitude": 45.184, "longitude": 9.158},
+    {"id": "milano", "label": "Milano", "latitude": 45.4642, "longitude": 9.19}
+  ],
+  "documentary_finish": {"vignette": 0.24, "grain": 0.012},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

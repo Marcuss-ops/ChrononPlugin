@@ -1,0 +1,21 @@
+{
+  "width": 1280,
+  "height": 720,
+  "fps_num": 24,
+  "fps_den": 1,
+  "duration_us": 5500000,
+  "camera_motion_duration_us": 4300000,
+  "basemap": "esri_sat",
+  "camera_animation": "slow_approach",
+  "camera_anchor": [46.016, 9.264],
+  "camera_start_zoom": 7.2,
+  "camera_end_zoom": 9.3,
+  "map_animation": "area_glow_pulse",
+  "area_glow_radius_km": 8.0,
+  "pins": [
+    {"id": "como", "label": "Lago di Como", "latitude": 46.016, "longitude": 9.264}
+  ],
+  "documentary_finish": {"vignette": 0.24, "grain": 0.012},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

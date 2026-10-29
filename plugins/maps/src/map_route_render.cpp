@@ -13,8 +13,8 @@ namespace {
 
 constexpr double kPi = 3.141592653589793238462643383279502884;
 const cv::Scalar kInk(25, 31, 34);
-const cv::Scalar kGold(77, 207, 244);
-const cv::Scalar kPaper(247, 249, 247);
+const cv::Scalar kGold(118, 181, 157);
+const cv::Scalar kPaper(229, 235, 224);
 
 [[nodiscard]] double radians(double degrees) { return degrees * kPi / 180.0; }
 [[nodiscard]] double degrees(double radians_value) { return radians_value * 180.0 / kPi; }
@@ -93,6 +93,7 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
                          std::pair<double, double> camera_anchor, double zoom,
                          double progress, int frame_index,
                          const std::vector<double>& altitude_m) {
+    (void)frame_index;
     if (stops.size() < 2) return;
     progress = std::clamp(progress, 0.0, 1.0);
     std::vector<std::vector<cv::Point>> segments;
@@ -101,8 +102,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
         segments.push_back(segment_points(stops[i], stops[i + 1], camera_anchor,
                                           zoom, frame.size()));
         cv::polylines(frame, segments.back(), false, kInk, 8, cv::LINE_AA);
-        cv::polylines(frame, segments.back(), false, cv::Scalar(215, 190, 142),
-                      3, cv::LINE_AA);
+        cv::polylines(frame, segments.back(), false, cv::Scalar(163, 173, 151),
+                      2, cv::LINE_AA);
     }
 
     const double scaled = progress * static_cast<double>(segments.size());
@@ -125,7 +126,7 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     }
     cv::Mat bloom;
     cv::GaussianBlur(route_glow, bloom, {17, 17}, 0.0);
-    cv::addWeighted(frame, 1.0, bloom, 0.32, 0.0, frame);
+    cv::addWeighted(frame, 1.0, bloom, 0.22, 0.0, frame);
 
     for (std::size_t i = 0; i < stops.size(); ++i) {
         const auto [x, y] = geo_to_screen(stops[i].latitude, stops[i].longitude,
@@ -156,10 +157,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
         static_cast<std::size_t>(std::nearbyint(segment_progress * (active.size() - 1))),
         active.size() - 1);
     const cv::Point head = active[head_index];
-    const int pulse_radius = 13 + static_cast<int>(std::nearbyint(
-        7.0 * (0.5 + 0.5 * std::sin(2.0 * kPi * (frame_index % 30) / 30.0))));
-    cv::circle(frame, head, pulse_radius, kGold, 2, cv::LINE_AA);
-    cv::circle(frame, head, 5, kPaper, cv::FILLED, cv::LINE_AA);
+    cv::circle(frame, head, 11, kGold, 2, cv::LINE_AA);
+    cv::circle(frame, head, 4, kPaper, cv::FILLED, cv::LINE_AA);
     cv::circle(frame, head, 2, kGold, cv::FILLED, cv::LINE_AA);
 }
 

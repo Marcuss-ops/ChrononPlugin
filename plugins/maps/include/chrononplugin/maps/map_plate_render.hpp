@@ -14,11 +14,11 @@
 //  * sampler "cpu" (the native vector plates are CPU-sampled);
 //  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
 //    World Imagery tiles, OpenCV continuous pyramid sampler);
-//  * the native documentary compositions published by
-//    `plugins/maps/maps-renderer-catalog.v1.json` (the single vocabulary
-//    source consumed by other repositories): `route_line`,
-//    `satellite_dive_lock`, `crime_scene_radar`, `multi_leg_flight`,
-//    `territory_polygon_wipe` plus the documentary concept gallery;
+//  * the deliberately small runtime set published by
+//    `plugins/maps/maps-renderer-catalog.v1.json`: `route_line`,
+//    `multi_leg_flight`, `territory_glow_reveal`, `area_glow_pulse`, and
+//    `route_glow_reveal`. Concept-gallery treatments are authoring references
+//    only and are not accepted by this renderer;
 //  * exponential or product slow-approach camera easing, HUD telemetry,
 //    pulsing geodesic radius, GeoJSON territory wipe, vignette and film grain;
 //  * camera_animation "slow_approach" (the product "dive" shot) over one
