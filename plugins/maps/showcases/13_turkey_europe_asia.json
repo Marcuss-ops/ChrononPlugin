@@ -1,0 +1,49 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "camera_motion_duration_us": 1200000,
+  "documentary_finish": {
+    "vignette": 0.04,
+    "grain": 0.0
+  },
+  "encoder_profile": {
+    "codec": "h264_nvenc",
+    "gpu": true,
+    "preset": "p6",
+    "quality": 15
+  },
+  "sampler": "cpu",
+  "camera_animation": "slow_approach",
+  "basemap": "esri_sat",
+  "camera_anchor": [
+    40.1,
+    35.0
+  ],
+  "camera_start_zoom": 4.4,
+  "camera_end_zoom": 4.4,
+  "map_animation": "continental_atlas",
+  "country_feature": "Turkey",
+  "pins": [
+    {
+      "id": "turkey",
+      "label": "TURCHIA",
+      "latitude": 39.2,
+      "longitude": 35.2
+    },
+    {
+      "id": "europe",
+      "label": "EUROPA",
+      "latitude": 47.3,
+      "longitude": 19.0
+    },
+    {
+      "id": "asia",
+      "label": "ASIA",
+      "latitude": 40.7,
+      "longitude": 46.0
+    }
+  ]
+}

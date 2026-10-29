@@ -1,0 +1,37 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "camera_motion_duration_us": 1200000,
+  "basemap": "esri_sat",
+  "camera_animation": "slow_approach",
+  "camera_anchor": [
+    45.184,
+    9.158
+  ],
+  "camera_start_zoom": 8.2,
+  "camera_end_zoom": 9.3,
+  "map_animation": "satellite_scan_reveal",
+  "territory_feature": "Pavia",
+  "pins": [
+    {
+      "id": "pavia",
+      "label": "PAVIA",
+      "latitude": 45.184,
+      "longitude": 9.158
+    }
+  ],
+  "documentary_finish": {
+    "vignette": 0.06,
+    "grain": 0.0
+  },
+  "encoder_profile": {
+    "codec": "h264_nvenc",
+    "gpu": true,
+    "preset": "p6",
+    "quality": 15
+  },
+  "sampler": "cpu"
+}

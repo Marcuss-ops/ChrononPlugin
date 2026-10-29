@@ -1,0 +1,48 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "camera_motion_duration_us": 1200000,
+  "basemap": "esri_sat",
+  "camera_animation": "slow_approach",
+  "camera_anchor": [
+    45.4642,
+    9.19
+  ],
+  "camera_start_zoom": 7.7,
+  "camera_end_zoom": 8.8,
+  "map_animation": "city_network_expansion",
+  "pins": [
+    {
+      "id": "milano",
+      "label": "MILANO",
+      "latitude": 45.4642,
+      "longitude": 9.19
+    },
+    {
+      "id": "como",
+      "label": "COMO",
+      "latitude": 45.8081,
+      "longitude": 9.0852
+    },
+    {
+      "id": "pavia",
+      "label": "PAVIA",
+      "latitude": 45.184,
+      "longitude": 9.158
+    }
+  ],
+  "documentary_finish": {
+    "vignette": 0.06,
+    "grain": 0.0
+  },
+  "encoder_profile": {
+    "codec": "h264_nvenc",
+    "gpu": true,
+    "preset": "p6",
+    "quality": 15
+  },
+  "sampler": "cpu"
+}

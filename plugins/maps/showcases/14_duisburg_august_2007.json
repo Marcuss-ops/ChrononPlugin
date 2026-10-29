@@ -1,0 +1,38 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "camera_motion_duration_us": 1200000,
+  "documentary_finish": {
+    "vignette": 0.04,
+    "grain": 0.0
+  },
+  "encoder_profile": {
+    "codec": "h264_nvenc",
+    "gpu": true,
+    "preset": "p6",
+    "quality": 15
+  },
+  "sampler": "cpu",
+  "basemap": "esri_sat",
+  "camera_animation": "slow_approach",
+  "camera_anchor": [
+    51.43,
+    6.76
+  ],
+  "camera_start_zoom": 6.0,
+  "camera_end_zoom": 6.7,
+  "map_animation": "historic_location_timeline",
+  "country_feature": "Germany",
+  "timeline_label": "AUGUST 2007",
+  "pins": [
+    {
+      "id": "duisburg",
+      "label": "DUISBURG",
+      "latitude": 51.4344,
+      "longitude": 6.7623
+    }
+  ]
+}

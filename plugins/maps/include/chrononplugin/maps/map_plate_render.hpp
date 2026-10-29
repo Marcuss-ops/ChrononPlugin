@@ -9,8 +9,8 @@
 // chronon.dynamic-map-telemetry.v1 summary the cache identity requires.
 //
 // NATIVE SUBSET (anything else is refused, never guessed):
-//  * the closed encoder profiles libx264/veryfast/23 and h264_nvenc/p6/15
-//    (NVENC still requires the OpenCL sampler, so today: libx264/cpu);
+//  * the closed encoder profiles libx264/veryfast/23, libx264/slow/17 and
+//    h264_nvenc/p6/15 (NVENC encodes frames composed by the CPU sampler);
 //  * sampler "cpu" (the native vector plates are CPU-sampled);
 //  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
 //    World Imagery tiles, OpenCV continuous pyramid sampler);

@@ -1,0 +1,23 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration_seconds": 12,
+  "tags": [
+    {"label":"PAVIA","style":"saffron_serif"},
+    {"label":"MILANO","style":"ice_serif"},
+    {"label":"FIRENZE","style":"coral_sans"},
+    {"label":"COMO","style":"cyan_glow"},
+    {"label":"LOMBARDIA","style":"mint_sans"},
+    {"label":"ITALIA","style":"amber_condensed"},
+    {"label":"TURCHIA","style":"fatface_coral"},
+    {"label":"EUROPA","style":"poppins_placard"},
+    {"label":"ASIA","style":"outlined_editorial"},
+    {"label":"DUBAI","style":"night_cyan"},
+    {"label":"ROMA","style":"rose_display"},
+    {"label":"GENOVA","style":"lime_locator"},
+    {"label":"MONTI TAURO","style":"slate_minimal"},
+    {"label":"DUISBURG","style":"orange_oswald"},
+    {"label":"TOSCANA","style":"royal_glass"}
+  ]
+}
