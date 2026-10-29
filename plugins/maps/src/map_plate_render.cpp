@@ -178,7 +178,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         "camera_animation", "label_animation", "map_animation", "basemap",
         "route_timing", "country_context", "area_glow_radius_km",
         "camera_anchor", "camera_start_zoom", "camera_end_zoom",
-        "camera_motion_duration_us", "overlay_hud", "crime_scene_radius_m",
+        "camera_motion_duration_us",
         "territory_feature", "documentary_finish", "route_altitudes_m",
     };
     for (auto it = payload.begin(); it != payload.end(); ++it) {
@@ -270,19 +270,6 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         (!std::isfinite(payload.value("area_glow_radius_km", 0.0)) ||
          payload.value("area_glow_radius_km", 0.0) <= 0.0)) {
         error = "area_glow_pulse requires a positive area_glow_radius_km";
-        return false;
-    }
-    static const std::set<std::string> routed = {
-        "route_glow_reveal",
-    };
-    if (routed.count(map_animation) &&
-        (!payload.contains("pins") || !payload.at("pins").is_array() ||
-         payload.at("pins").size() < 2)) {
-        error = map_animation + " requires at least two map pins";
-        return false;
-    }
-    if (payload.contains("overlay_hud") && !payload.at("overlay_hud").is_object()) {
-        error = "overlay_hud must be an object";
         return false;
     }
     if (payload.contains("documentary_finish") &&
@@ -403,8 +390,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         return {MapPlateStatus::kInvalidRequest, error};
     }
     const std::string map_animation = payload.value("map_animation", "");
-    if ((map_animation == "route_line" || map_animation == "multi_leg_flight" ||
-         map_animation == "route_glow_reveal") &&
+    if ((map_animation == "route_line" || map_animation == "multi_leg_flight") &&
         pins.size() < 2) {
         return {MapPlateStatus::kInvalidRequest,
                 "route animation requires at least two grounded map pins"};
@@ -425,25 +411,6 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             route_altitudes.push_back(value.get<double>());
         }
     }
-    const auto hud = payload.value("overlay_hud", nlohmann::json::object());
-    if (!hud.is_object()) {
-        return {MapPlateStatus::kInvalidRequest, "overlay_hud must be an object"};
-    }
-    for (auto it = hud.begin(); it != hud.end(); ++it) {
-        if (it.key() != "show_telemetry" && it.key() != "target_label" &&
-            it.key() != "reticle_style") {
-            return {MapPlateStatus::kNotImplemented,
-                    "unsupported overlay_hud field: " + it.key()};
-        }
-    }
-    if ((hud.contains("show_telemetry") && !hud.at("show_telemetry").is_boolean()) ||
-        (hud.contains("target_label") && !hud.at("target_label").is_string()) ||
-        (hud.contains("reticle_style") &&
-         hud.at("reticle_style") != "military_brackets")) {
-        return {MapPlateStatus::kInvalidRequest,
-                "overlay_hud expects show_telemetry, target_label and reticle_style=military_brackets"};
-    }
-    const std::string hud_label = hud.value("target_label", pins.front().text);
     const auto finish = payload.value("documentary_finish", nlohmann::json::object());
     if (!finish.is_object()) {
         return {MapPlateStatus::kInvalidRequest, "documentary_finish must be an object"};
@@ -497,8 +464,9 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                                  (1.0 - std::pow(2.0, -10.0));
             frame_zooms.push_back(start_zoom + (end_zoom - start_zoom) * eased);
         } else {
+            const int camera_frame = std::min(f, motion_frame_count - 1);
             frame_zooms.push_back(builder_dive_zoom(start_zoom, end_zoom,
-                                                    frame_count, f));
+                                                    motion_frame_count, camera_frame));
         }
     }
 
@@ -599,8 +567,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         }
         const double linear_progress = static_cast<double>(f) /
             static_cast<double>(std::max<std::int64_t>(1, request.frame_count - 1));
-        if (map_animation == "route_line" || map_animation == "multi_leg_flight" ||
-            map_animation == "route_glow_reveal") {
+        if (map_animation == "route_line" || map_animation == "multi_leg_flight") {
             std::vector<MapRouteStop> stops;
             stops.reserve(pins.size());
             for (const Pin& pin : pins) {
@@ -615,25 +582,16 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             }
             draw_animated_route(frame, stops, anchor, zoom, progress,
                                 static_cast<int>(f), route_altitudes);
-        } else if (map_animation == "satellite_dive_lock") {
-            const double progress = std::clamp(static_cast<double>(f) /
-                static_cast<double>(std::max(1, motion_frame_count - 1)), 0.0, 1.0);
-            draw_satellite_lock(frame, {pins.front().lat, pins.front().lon}, anchor,
-                                zoom, progress, hud_label,
-                                hud.value("show_telemetry", true));
-        } else if (map_animation == "crime_scene_radar") {
-            draw_crime_scene(frame, {pins.front().lat, pins.front().lon}, anchor,
-                zoom, payload.at("crime_scene_radius_m").get<double>(),
-                linear_progress, static_cast<int>(f), hud_label);
         } else if (map_animation == "territory_glow_reveal") {
+            const double reveal_progress = std::clamp(
+                static_cast<double>(f) /
+                    static_cast<double>(std::max(1, motion_frame_count - 1)),
+                0.0, 1.0);
             draw_territory_wipe(frame, territory_polygons, anchor, zoom,
-                linear_progress, payload.at("territory_feature").get<std::string>());
-            for (const Pin& pin : pins) {
-                const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
-                                                  request.output_width,
-                                                  request.output_height);
-                draw_animated_pin(frame, {x, y}, static_cast<int>(f), hud_label);
-            }
+                reveal_progress * reveal_progress * (3.0 - 2.0 * reveal_progress));
+            const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
+                anchor, zoom, request.output_width, request.output_height);
+            draw_territory_callout(frame, {x, y}, pins.front().text);
         } else if (map_animation == "area_glow_pulse") {
             const double latitude = pins.front().lat;
             const double metres_per_pixel = 156543.03392 *
@@ -643,7 +601,8 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 1000.0 / std::max(1e-9, metres_per_pixel);
             const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
                 anchor, zoom, request.output_width, request.output_height);
-            draw_area_glow(frame, {x, y}, radius_pixels, linear_progress);
+            draw_area_glow(frame, {x, y}, radius_pixels, linear_progress,
+                           pins.front().text);
         } else {
             for (const Pin& pin : pins) {
                 const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,

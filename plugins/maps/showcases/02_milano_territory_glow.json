@@ -1,0 +1,11 @@
+{
+  "width": 1280, "height": 720, "fps_num": 24, "fps_den": 1,
+  "duration_us": 4000000, "camera_motion_duration_us": 2400000,
+  "basemap": "esri_sat", "camera_animation": "slow_approach",
+  "camera_anchor": [45.4642, 9.19], "camera_start_zoom": 7.3, "camera_end_zoom": 9.3,
+  "map_animation": "territory_glow_reveal", "territory_feature": "Milano",
+  "pins": [{"id": "milano", "label": "Milano", "latitude": 45.4642, "longitude": 9.19}],
+  "documentary_finish": {"vignette": 0.06, "grain": 0.0},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

@@ -15,7 +15,7 @@
   "pins": [
     {"id": "como", "label": "Lago di Como", "latitude": 46.016, "longitude": 9.264}
   ],
-  "documentary_finish": {"vignette": 0.24, "grain": 0.012},
+  "documentary_finish": {"vignette": 0.06, "grain": 0.0},
   "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
   "sampler": "cpu"
 }

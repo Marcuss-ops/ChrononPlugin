@@ -16,15 +16,15 @@
 //    World Imagery tiles, OpenCV continuous pyramid sampler);
 //  * the deliberately small runtime set published by
 //    `plugins/maps/maps-renderer-catalog.v1.json`: `route_line`,
-//    `multi_leg_flight`, `territory_glow_reveal`, `area_glow_pulse`, and
-//    `route_glow_reveal`. Concept-gallery treatments are authoring references
+//    `multi_leg_flight`, `territory_glow_reveal`, and `area_glow_pulse`.
+//    Concept-gallery treatments are authoring references
 //    only and are not accepted by this renderer;
-//  * exponential or product slow-approach camera easing, HUD telemetry,
-//    pulsing geodesic radius, GeoJSON territory wipe, vignette and film grain;
+//  * slow-approach or exponential camera easing, quiet area glow,
+//    GeoJSON territory reveal, route timing, vignette and film grain;
 //  * camera_animation "slow_approach" (the product "dive" shot) over one
 //    anchor: an explicit `camera_anchor` or the single unique pin;
 //  * label_animation "none"; pin labels are drawn as camera-aligned labels;
-//  * no per-pin spoken schedules, route_timing or country_context tours;
+//  * no per-pin spoken schedules or country_context tours;
 //  * at most five unique pins (the product route budget, fail-closed above).
 //
 // Planning provenance fields (map_group, composition_family, typography, ...)

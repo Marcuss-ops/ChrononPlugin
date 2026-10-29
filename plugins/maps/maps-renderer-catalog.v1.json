@@ -11,8 +11,7 @@
     "route_line",
     "multi_leg_flight",
     "territory_glow_reveal",
-    "area_glow_pulse",
-    "route_glow_reveal"
+    "area_glow_pulse"
   ],
   "camera_animations": [
     "slow_approach",

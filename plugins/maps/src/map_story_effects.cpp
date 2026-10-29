@@ -6,37 +6,11 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 #include <map>
 
 namespace chrononplugin::maps {
 namespace {
 constexpr double kPi = 3.14159265358979323846;
-const cv::Scalar kAmber(35, 196, 255);
-const cv::Scalar kCyan(255, 222, 107);
-
-void line(cv::Mat& frame, cv::Point a, cv::Point b, cv::Scalar color,
-          int thickness = 1) {
-    cv::line(frame, a, b, color, thickness, cv::LINE_AA);
-}
-
-void draw_bracket(cv::Mat& frame, cv::Point center, int radius, int length,
-                  cv::Scalar color) {
-    for (int sx : {-1, 1}) for (int sy : {-1, 1}) {
-        const cv::Point corner(center.x + sx * radius, center.y + sy * radius);
-        line(frame, corner, {corner.x - sx * length, corner.y}, color, 2);
-        line(frame, corner, {corner.x, corner.y - sy * length}, color, 2);
-    }
-}
-
-void put_hud(cv::Mat& frame, const std::string& text, cv::Point origin,
-             double scale = 0.55) {
-    cv::putText(frame, text, origin, cv::FONT_HERSHEY_DUPLEX, scale,
-                cv::Scalar(10, 17, 21), 4, cv::LINE_AA);
-    cv::putText(frame, text, origin, cv::FONT_HERSHEY_DUPLEX, scale,
-                cv::Scalar(230, 242, 237), 1, cv::LINE_AA);
-}
-
 std::vector<cv::Point> project_ring(const std::vector<GeoPosition>& ring,
                                     std::pair<double, double> anchor,
                                     double zoom, cv::Size size) {
@@ -51,99 +25,9 @@ std::vector<cv::Point> project_ring(const std::vector<GeoPosition>& ring,
 }
 }  // namespace
 
-void draw_satellite_lock(cv::Mat& frame, std::pair<double, double> target,
-                         std::pair<double, double> camera_anchor, double zoom,
-                         double progress, const std::string& label,
-                         bool show_telemetry) {
-    progress = std::clamp(progress, 0.0, 1.0);
-    const auto [x, y] = geo_to_screen(target.first, target.second, camera_anchor,
-                                      zoom, frame.cols, frame.rows);
-    const cv::Point center(x, y);
-    const int radius = static_cast<int>(std::nearbyint(112.0 - 78.0 * progress));
-    const int len = static_cast<int>(std::nearbyint(24.0 - 10.0 * progress));
-    draw_bracket(frame, center, radius, len, kAmber);
-    const int cross = std::max(8, 34 - static_cast<int>(progress * 23.0));
-    line(frame, {x - cross, y}, {x - 5, y}, cv::Scalar(235, 243, 243));
-    line(frame, {x + 5, y}, {x + cross, y}, cv::Scalar(235, 243, 243));
-    line(frame, {x, y - cross}, {x, y - 5}, cv::Scalar(235, 243, 243));
-    line(frame, {x, y + 5}, {x, y + cross}, cv::Scalar(235, 243, 243));
-    cv::circle(frame, center, 3, kAmber, cv::FILLED, cv::LINE_AA);
-
-    const double lat_rad = target.first * kPi / 180.0;
-    const double mpp = 156543.03392 * std::cos(lat_rad) / std::pow(2.0, zoom);
-    const double altitude_km = mpp * frame.rows * 0.95 / 1000.0;
-    if (show_telemetry) {
-        char ticker[256];
-        std::snprintf(ticker, sizeof(ticker), "LAT %+.4f   LON %+.4f   ALT %.2f km   GSD %.1f m/px",
-                      target.first, target.second, altitude_km, mpp);
-        const int base_y = frame.rows - 28;
-        cv::rectangle(frame, {18, base_y - 30}, {frame.cols - 18, frame.rows - 12},
-                      cv::Scalar(10, 17, 21), cv::FILLED);
-        cv::rectangle(frame, {18, base_y - 30}, {frame.cols - 18, frame.rows - 12},
-                      cv::Scalar(79, 99, 91), 1, cv::LINE_AA);
-        put_hud(frame, ticker, {30, base_y - 7}, 0.48);
-    }
-    put_hud(frame, label, {30, 36}, 0.68);
-    if (show_telemetry)
-        put_hud(frame, progress >= 0.985 ? "TARGET LOCK" : "ACQUIRING TARGET",
-                {frame.cols - 260, 36}, 0.48);
-}
-
-void draw_crime_scene(cv::Mat& frame, std::pair<double, double> target,
-                      std::pair<double, double> camera_anchor, double zoom,
-                      double radius_m, double progress, int frame_index,
-                      const std::string& label) {
-    cv::Mat gray, blue, green, red, graded;
-    cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-    gray.convertTo(blue, CV_8U, 1.12);
-    gray.convertTo(green, CV_8U, 0.91);
-    gray.convertTo(red, CV_8U, 0.72);
-    std::vector<cv::Mat> channels{blue, green, red};
-    cv::merge(channels, graded);
-    cv::addWeighted(graded, 0.92, frame, 0.08, 0.0, frame);
-    frame.convertTo(frame, -1, 0.78, 0.0);
-
-    const auto [x, y] = geo_to_screen(target.first, target.second,
-        camera_anchor, zoom, frame.cols, frame.rows);
-    const double mpp = 156543.03392 * std::cos(target.first * kPi / 180.0) /
-                       std::pow(2.0, zoom);
-    const int radius = std::clamp(static_cast<int>(std::nearbyint(radius_m / mpp)), 12,
-                                  std::max(frame.cols, frame.rows));
-    cv::Mat circle_mask(frame.size(), CV_8UC1, cv::Scalar(0));
-    cv::circle(circle_mask, {x, y}, radius, cv::Scalar(255), cv::FILLED, cv::LINE_AA);
-    cv::Mat hatch(frame.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-    for (int d = -frame.rows; d < frame.cols + frame.rows; d += 16)
-        line(hatch, {d, frame.rows}, {d + frame.rows, 0}, cv::Scalar(113, 126, 76), 1);
-    cv::Mat hatch_masked;
-    hatch.copyTo(hatch_masked, circle_mask);
-    cv::addWeighted(frame, 1.0, hatch_masked, 0.30, 0.0, frame);
-
-    cv::Mat rings(frame.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-    for (int ring = 0; ring < 3; ++ring) {
-        const double phase = std::fmod(progress * 2.8 + ring / 3.0, 1.0);
-        const int ring_radius = std::max(3, static_cast<int>(phase * radius));
-        cv::circle(rings, {x, y}, ring_radius, kCyan, 2, cv::LINE_AA);
-    }
-    cv::addWeighted(frame, 1.0, rings, 0.58, 0.0, frame);
-
-    for (int degree = 0; degree < 360; degree += 18) {
-        const int end = std::min(360, degree + 10);
-        cv::ellipse(frame, {x, y}, {radius, radius}, 0.0, degree, end,
-                    kAmber, 2, cv::LINE_AA);
-    }
-    const int pulse = 8 + (frame_index * 3) % std::max(12, radius);
-    cv::circle(frame, {x, y}, pulse, kCyan, 2, cv::LINE_AA);
-    cv::circle(frame, {x, y}, 6, cv::Scalar(235, 245, 243), cv::FILLED, cv::LINE_AA);
-    char caption[160];
-    std::snprintf(caption, sizeof(caption), "%s  /  RAGGIO %.1f km  /  %d MIN A PIEDI",
-                  label.c_str(), radius_m / 1000.0,
-                  static_cast<int>(std::nearbyint(radius_m / 1000.0 * 12.0)));
-    put_hud(frame, caption, {28, 42}, 0.62);
-}
-
 void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons,
                          std::pair<double, double> camera_anchor, double zoom,
-                         double progress, const std::string& label) {
+                         double progress) {
     if (polygons.empty()) return;
     progress = std::clamp(progress, 0.0, 1.0);
     cv::Mat mask(frame.size(), CV_8UC1, cv::Scalar(0));
@@ -165,14 +49,14 @@ void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons
     cv::fillPoly(mask, holes, cv::Scalar(0), cv::LINE_AA);
 
     cv::Mat dimmed;
-    frame.convertTo(dimmed, -1, 0.86, 0.0);
+    frame.convertTo(dimmed, -1, 0.96, 0.0);
     cv::Mat outside;
     cv::bitwise_not(mask, outside);
     dimmed.copyTo(frame, outside);
 
-    cv::Mat tint(frame.size(), CV_8UC3, cv::Scalar(112, 137, 82));
+    cv::Mat tint(frame.size(), CV_8UC3, cv::Scalar(210, 151, 96));
     cv::Mat blended;
-    cv::addWeighted(frame, 0.86, tint, 0.14, 0.0, blended);
+    cv::addWeighted(frame, 0.88, tint, 0.12, 0.0, blended);
     blended.copyTo(frame, mask);
 
     cv::Mat glow(frame.size(), CV_8UC3, cv::Scalar(0, 0, 0));
@@ -186,19 +70,35 @@ void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons
         if (visible > 1) {
             std::vector<cv::Point> partial(ring.begin(), ring.begin() +
                 static_cast<std::ptrdiff_t>(visible + 1));
-            cv::polylines(glow, partial, false, cv::Scalar(160, 190, 119), 5, cv::LINE_AA);
-            cv::polylines(frame, partial, false, cv::Scalar(188, 218, 154), 2, cv::LINE_AA);
+            cv::polylines(glow, partial, false, cv::Scalar(220, 162, 96), 4, cv::LINE_AA);
+            cv::polylines(frame, partial, false, cv::Scalar(250, 218, 170), 1, cv::LINE_AA);
         }
         consumed += count;
     }
     cv::Mat bloom;
-    cv::GaussianBlur(glow, bloom, {19, 19}, 0.0);
-    cv::addWeighted(frame, 1.0, bloom, 0.28, 0.0, frame);
-    put_hud(frame, "TERRITORIO // " + label, {28, 38}, 0.66);
+    cv::GaussianBlur(glow, bloom, {13, 13}, 0.0);
+    cv::addWeighted(frame, 1.0, bloom, 0.16, 0.0, frame);
+}
+
+void draw_territory_callout(cv::Mat& frame, cv::Point anchor,
+                            const std::string& place_name) {
+    if (place_name.empty()) return;
+    const cv::Point elbow(anchor.x + 24, anchor.y - 34);
+    const cv::Point label_start(anchor.x + 44, anchor.y - 34);
+    cv::line(frame, anchor, elbow, cv::Scalar(238, 171, 105), 2, cv::LINE_AA);
+    cv::line(frame, elbow, label_start, cv::Scalar(246, 243, 235), 2, cv::LINE_AA);
+    cv::circle(frame, anchor, 4, cv::Scalar(246, 249, 252), cv::FILLED, cv::LINE_AA);
+    cv::circle(frame, anchor, 5, cv::Scalar(240, 164, 91), 1, cv::LINE_AA);
+    cv::putText(frame, place_name, label_start + cv::Point(5, 4),
+                cv::FONT_HERSHEY_SIMPLEX, 0.61, cv::Scalar(18, 22, 27),
+                3, cv::LINE_AA);
+    cv::putText(frame, place_name, label_start + cv::Point(5, 4),
+                cv::FONT_HERSHEY_SIMPLEX, 0.61, cv::Scalar(250, 251, 253),
+                1, cv::LINE_AA);
 }
 
 void draw_area_glow(cv::Mat& frame, cv::Point center, double radius_pixels,
-                    double progress) {
+                    double progress, const std::string& label) {
     const double radius = std::clamp(radius_pixels, 8.0,
         static_cast<double>(std::max(frame.cols, frame.rows)));
     const double breath = 0.95 + 0.05 * std::sin(2.0 * kPi * progress);
@@ -206,17 +106,19 @@ void draw_area_glow(cv::Mat& frame, cv::Point center, double radius_pixels,
 
     cv::Mat fill_mask(frame.size(), CV_8UC1, cv::Scalar(0));
     cv::circle(fill_mask, center, r, cv::Scalar(255), cv::FILLED, cv::LINE_AA);
-    cv::Mat tint(frame.size(), CV_8UC3, cv::Scalar(112, 137, 82));
+    cv::Mat tint(frame.size(), CV_8UC3, cv::Scalar(210, 151, 96));
     cv::Mat tinted;
-    cv::addWeighted(frame, 0.92, tint, 0.08, 0.0, tinted);
+    cv::addWeighted(frame, 0.90, tint, 0.10, 0.0, tinted);
     tinted.copyTo(frame, fill_mask);
 
     cv::Mat glow(frame.size(), CV_8UC3, cv::Scalar(0, 0, 0));
-    cv::circle(glow, center, r, cv::Scalar(150, 192, 123), cv::FILLED, cv::LINE_AA);
-    cv::GaussianBlur(glow, glow, {0, 0}, std::max(2.0, radius * 0.18));
-    cv::addWeighted(frame, 1.0, glow, 0.18, 0.0, frame);
-    cv::circle(frame, center, r, cv::Scalar(184, 215, 151), 2, cv::LINE_AA);
-    cv::circle(frame, center, 4, cv::Scalar(230, 238, 219), cv::FILLED, cv::LINE_AA);
+    cv::circle(glow, center, r, cv::Scalar(230, 163, 92), cv::FILLED, cv::LINE_AA);
+    cv::GaussianBlur(glow, glow, {0, 0}, std::max(2.0, radius * 0.22));
+    cv::addWeighted(frame, 1.0, glow, 0.11, 0.0, frame);
+    cv::circle(frame, center, r, cv::Scalar(245, 198, 130), 1, cv::LINE_AA);
+    cv::circle(frame, center, 4, cv::Scalar(246, 249, 252), cv::FILLED, cv::LINE_AA);
+    cv::circle(frame, center, 2, cv::Scalar(255, 142, 66), cv::FILLED, cv::LINE_AA);
+    draw_territory_callout(frame, center, label);
 }
 
 void apply_documentary_finish(cv::Mat& frame, int frame_index,

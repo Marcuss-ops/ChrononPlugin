@@ -12,9 +12,8 @@ namespace chrononplugin::maps {
 namespace {
 
 constexpr double kPi = 3.141592653589793238462643383279502884;
-const cv::Scalar kInk(25, 31, 34);
-const cv::Scalar kGold(118, 181, 157);
-const cv::Scalar kPaper(229, 235, 224);
+const cv::Scalar kMapBlue(248, 139, 60);
+const cv::Scalar kPaper(244, 247, 250);
 
 [[nodiscard]] double radians(double degrees) { return degrees * kPi / 180.0; }
 [[nodiscard]] double degrees(double radians_value) { return radians_value * 180.0 / kPi; }
@@ -64,30 +63,16 @@ void draw_label(cv::Mat& frame, cv::Point p, const std::string& label,
     if (label.empty()) return;
     int baseline = 0;
     const int width = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX,
-                                     0.74, 2, &baseline).width;
+                                     0.61, 1, &baseline).width;
     if (offset.x < 0) offset.x -= width;
     const cv::Point origin(p.x + offset.x, p.y + offset.y);
-    cv::putText(frame, label, origin, cv::FONT_HERSHEY_SIMPLEX, 0.74,
-                kInk, 5, cv::LINE_AA);
-    cv::putText(frame, label, origin, cv::FONT_HERSHEY_SIMPLEX, 0.74,
-                kPaper, 2, cv::LINE_AA);
+    cv::putText(frame, label, origin + cv::Point(1, 1), cv::FONT_HERSHEY_SIMPLEX,
+                0.61, cv::Scalar(15, 25, 35), 2, cv::LINE_AA);
+    cv::putText(frame, label, origin, cv::FONT_HERSHEY_SIMPLEX, 0.61,
+                kPaper, 1, cv::LINE_AA);
 }
 
 }  // namespace
-
-void draw_animated_pin(cv::Mat& frame, cv::Point position, int frame_index,
-                       const std::string& label) {
-    const double phase = 2.0 * kPi * static_cast<double>(frame_index % 36) / 36.0;
-    const int radius = 12 + static_cast<int>(std::nearbyint(5.0 * (0.5 + 0.5 * std::sin(phase))));
-    cv::Mat glow(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
-    cv::circle(glow, position, radius + 5, kGold, cv::FILLED, cv::LINE_AA);
-    cv::addWeighted(frame, 1.0, glow, 0.19, 0.0, frame);
-    cv::circle(frame, position, radius, kGold, 2, cv::LINE_AA);
-    cv::circle(frame, position, 8, kInk, cv::FILLED, cv::LINE_AA);
-    cv::circle(frame, position, 5, kGold, cv::FILLED, cv::LINE_AA);
-    cv::circle(frame, position, 2, kPaper, cv::FILLED, cv::LINE_AA);
-    draw_label(frame, position, label);
-}
 
 void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
                          std::pair<double, double> camera_anchor, double zoom,
@@ -101,9 +86,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     for (std::size_t i = 0; i + 1 < stops.size(); ++i) {
         segments.push_back(segment_points(stops[i], stops[i + 1], camera_anchor,
                                           zoom, frame.size()));
-        cv::polylines(frame, segments.back(), false, kInk, 8, cv::LINE_AA);
-        cv::polylines(frame, segments.back(), false, cv::Scalar(163, 173, 151),
-                      2, cv::LINE_AA);
+        cv::polylines(frame, segments.back(), false, cv::Scalar(209, 196, 174),
+                      1, cv::LINE_AA);
     }
 
     const double scaled = progress * static_cast<double>(segments.size());
@@ -112,8 +96,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     const double segment_progress = progress >= 1.0 ? 1.0 : scaled - active_segment;
     cv::Mat route_glow(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
     for (std::size_t i = 0; i < active_segment; ++i) {
-        cv::polylines(frame, segments[i], false, kGold, 4, cv::LINE_AA);
-        cv::polylines(route_glow, segments[i], false, kGold, 12, cv::LINE_AA);
+        cv::polylines(frame, segments[i], false, kMapBlue, 2, cv::LINE_AA);
+        cv::polylines(route_glow, segments[i], false, kMapBlue, 8, cv::LINE_AA);
     }
     const auto& active = segments[active_segment];
     const std::size_t active_count = std::max<std::size_t>(
@@ -121,12 +105,12 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     std::vector<cv::Point> partial(active.begin(),
         active.begin() + static_cast<std::ptrdiff_t>(std::min(active_count, active.size())));
     if (partial.size() >= 2) {
-        cv::polylines(frame, partial, false, kGold, 4, cv::LINE_AA);
-        cv::polylines(route_glow, partial, false, kGold, 14, cv::LINE_AA);
+        cv::polylines(frame, partial, false, kMapBlue, 2, cv::LINE_AA);
+        cv::polylines(route_glow, partial, false, kMapBlue, 9, cv::LINE_AA);
     }
     cv::Mat bloom;
-    cv::GaussianBlur(route_glow, bloom, {17, 17}, 0.0);
-    cv::addWeighted(frame, 1.0, bloom, 0.22, 0.0, frame);
+    cv::GaussianBlur(route_glow, bloom, {13, 13}, 0.0);
+    cv::addWeighted(frame, 1.0, bloom, 0.11, 0.0, frame);
 
     for (std::size_t i = 0; i < stops.size(); ++i) {
         const auto [x, y] = geo_to_screen(stops[i].latitude, stops[i].longitude,
@@ -141,9 +125,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
             cv::line(frame, point, top, cv::Scalar(186, 224, 238), 2, cv::LINE_AA);
             cv::line(frame, top, {top.x + 15, top.y}, cv::Scalar(186, 224, 238), 2, cv::LINE_AA);
         }
-        cv::circle(frame, point, 10, kPaper, cv::FILLED, cv::LINE_AA);
-        cv::circle(frame, point, 7, kInk, cv::FILLED, cv::LINE_AA);
-        cv::circle(frame, point, 4, kGold, cv::FILLED, cv::LINE_AA);
+        cv::circle(frame, point, 5, kPaper, cv::FILLED, cv::LINE_AA);
+        cv::circle(frame, point, 3, kMapBlue, cv::FILLED, cv::LINE_AA);
         if (i == 0) {
             draw_label(frame, point, stops[i].label, {15, 31});
         } else if (i + 1 == stops.size()) {
@@ -157,9 +140,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
         static_cast<std::size_t>(std::nearbyint(segment_progress * (active.size() - 1))),
         active.size() - 1);
     const cv::Point head = active[head_index];
-    cv::circle(frame, head, 11, kGold, 2, cv::LINE_AA);
     cv::circle(frame, head, 4, kPaper, cv::FILLED, cv::LINE_AA);
-    cv::circle(frame, head, 2, kGold, cv::FILLED, cv::LINE_AA);
+    cv::circle(frame, head, 2, kMapBlue, cv::FILLED, cv::LINE_AA);
 }
 
 }  // namespace chrononplugin::maps

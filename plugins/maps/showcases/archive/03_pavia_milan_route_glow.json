@@ -10,13 +10,13 @@
   "camera_anchor": [45.35, 9.18],
   "camera_start_zoom": 7.4,
   "camera_end_zoom": 8.8,
-  "map_animation": "route_glow_reveal",
+  "map_animation": "route_line",
   "route_timing": {"start_us": 400000, "travel_us": 4800000},
   "pins": [
     {"id": "pavia", "label": "Pavia", "latitude": 45.184, "longitude": 9.158},
     {"id": "milano", "label": "Milano", "latitude": 45.4642, "longitude": 9.19}
   ],
-  "documentary_finish": {"vignette": 0.24, "grain": 0.012},
+  "documentary_finish": {"vignette": 0.06, "grain": 0.0},
   "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
   "sampler": "cpu"
 }

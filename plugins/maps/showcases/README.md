@@ -1,10 +1,10 @@
 # Runtime map animation previews
 
 The runtime renderer exposes a small set of geographic animations. This folder
-contains three restrained previews: a slow camera approach with a Pavia
-boundary reveal, a soft radius glow around Lake Como, and a slowly revealed
-Pavia–Milan route. Each animation is driven by geographic features or pins and
-uses the same camera zoom timeline as the map plate.
+contains four restrained boundary reveals: Pavia, Milano, Como and Firenze.
+Each uses the real province polygon, a quicker camera approach, and a callout
+whose fine leader line connects the highlighted city to its name. The route and
+radius experiments are archived separately.
 
 Older visual experiments remain under `archive/` as reference material. Their
 composition identifiers are intentionally absent from the runtime catalog and

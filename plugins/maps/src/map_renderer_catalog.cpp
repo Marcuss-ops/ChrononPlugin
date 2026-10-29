@@ -16,7 +16,7 @@ namespace chrononplugin::maps {
 const std::set<std::string>& supported_map_animations() {
     static const std::set<std::string> kAnimations = {
         "", "route_line", "multi_leg_flight", "territory_glow_reveal",
-        "area_glow_pulse", "route_glow_reveal",
+        "area_glow_pulse",
     };
     return kAnimations;
 }
