@@ -23,6 +23,8 @@
 // GeoJSON bytes plus (z, x, y) / plate window.
 
 #include <cstdint>
+#include <map>
+#include <tuple>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -55,6 +57,10 @@ class VectorPlateRaster {
     /// Number of outer rings carried at a zoom (diagnostics only).
     [[nodiscard]] std::size_t ring_count(int z) const;
 
+    /// Actual local tile rasterizations and cache hits during plate composition.
+    [[nodiscard]] std::int64_t tile_cache_hits() const { return tile_cache_hits_; }
+    [[nodiscard]] std::int64_t tile_cache_misses() const { return tile_cache_misses_; }
+
   private:
     // Outer ring as raw lon/lat positions (the only ring ever drawn, exactly
     // like polygon[0] in the Python renderer).
@@ -75,6 +81,10 @@ class VectorPlateRaster {
     std::vector<RawRing> countries_;
     std::vector<RawRing> admin2_;
     mutable std::unordered_map<int, ZoomData> zoom_cache_;
+    // Per-render bounded cache: tiles are immutable and never exposed to callers.
+    mutable std::map<std::tuple<int, std::int64_t, std::int64_t>, cv::Mat> tile_cache_;
+    mutable std::int64_t tile_cache_hits_ = 0;
+    mutable std::int64_t tile_cache_misses_ = 0;
 };
 
 }  // namespace chrononplugin::maps

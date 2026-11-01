@@ -827,17 +827,18 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     telemetry.encoder_preset = profile.preset;
     telemetry.encoder_quality = profile.quality;
     telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : 0;
-    telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : stats.tile_renders;
+    telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
     telemetry.tile.network_fetches = satellite ? satellite->network_fetches() : 0;
     telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;
     telemetry.tile.fallbacks = 0;
-    telemetry.tile.rendered_locally = satellite ? 0 : stats.tile_renders;
+    telemetry.tile.rendered_locally = satellite ? 0 : raster->tile_cache_misses();
     telemetry.tile.fetch_ms = satellite ? satellite->prefetch_ms() : compose_wall * 1e3;
     telemetry.tile.prefetch_ms = satellite ? satellite->prefetch_ms() : 0.0;
     const std::int64_t tile_count = satellite
-        ? satellite->disk_hits() + satellite->network_fetches() : stats.tile_renders;
-    const std::int64_t tile_cache_hits = satellite ? satellite->disk_hits() : 0;
-    const std::int64_t tile_fetched = satellite ? satellite->network_fetches() : stats.tile_renders;
+        ? satellite->disk_hits() + satellite->network_fetches()
+        : raster->tile_cache_hits() + raster->tile_cache_misses();
+    const std::int64_t tile_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
+    const std::int64_t tile_fetched = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
     telemetry.tile.prefetch_tiles_requested = tile_count;
     telemetry.tile.prefetch_tiles_memory_hits = tile_cache_hits;
     telemetry.plates.prepare_ms = prepare_ms;

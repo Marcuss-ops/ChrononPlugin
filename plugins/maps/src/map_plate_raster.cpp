@@ -302,7 +302,19 @@ cv::Mat VectorPlateRaster::compose_plate(double left, double top, int width, int
             const int dx1 = round_half_even(x1 - left);
             const int sx0 = round_half_even(x0 - static_cast<double>(tx) * 256.0);
             const int sx1 = round_half_even(x1 - static_cast<double>(tx) * 256.0);
-            const cv::Mat tile = render_tile(zoom, tx, ty);
+            const auto key = std::make_tuple(zoom, py_mod(tx, max_idx), static_cast<std::int64_t>(ty));
+            auto found = tile_cache_.find(key);
+            cv::Mat tile;
+            if (found != tile_cache_.end()) {
+                ++tile_cache_hits_;
+                tile = found->second;
+            } else {
+                ++tile_cache_misses_;
+                tile = render_tile(zoom, tx, ty);
+                // Bound memory to 1024 BGR tiles (~192 MiB), independent of video length.
+                if (tile_cache_.size() >= 1024) tile_cache_.erase(tile_cache_.begin());
+                tile_cache_.emplace(key, tile);
+            }
             const int hs = std::min(dy1 - dy0, sy1 - sy0);
             const int ws = std::min(dx1 - dx0, sx1 - sx0);
             if (hs > 0 && ws > 0) {

@@ -64,6 +64,16 @@ int main() {
     const cv::Mat plate = raster.compose_plate(left, top, 256, 256, 5);
     CHECK(plate.rows == 256 && plate.cols == 256);
     CHECK(same_pixels(plate, tile));
+    CHECK(raster.tile_cache_misses() == 1);
+    CHECK(raster.tile_cache_hits() == 0);
+    const cv::Mat repeated = raster.compose_plate(left, top, 256, 256, 5);
+    CHECK(same_pixels(repeated, tile));
+    CHECK(raster.tile_cache_misses() == 1);
+    CHECK(raster.tile_cache_hits() == 1);
+    const cv::Mat wrapped = raster.compose_plate(left + 32.0 * 256.0, top, 256, 256, 5);
+    CHECK(same_pixels(wrapped, tile));
+    CHECK(raster.tile_cache_misses() == 1);
+    CHECK(raster.tile_cache_hits() == 2);
 
     // The raster carries rings for the zoom it was asked for.
     CHECK(raster.ring_count(5) > 0);
