@@ -826,7 +826,12 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     telemetry.gpu_map_sampler = sampler;
     telemetry.encoder_preset = profile.preset;
     telemetry.encoder_quality = profile.quality;
-    telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : 0;
+    // Editorial plates reuse tiles in memory across frames; the wire field is
+    // named "disk_cache_hits" for the satellite pyramid, so the local raster
+    // cache reports its hits here as well. Without this the certified log says
+    // "cache_hit=0" while tens of thousands of tile placements were served
+    // from the cache and every one of them was cached.
+    telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
     telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
     telemetry.tile.network_fetches = satellite ? satellite->network_fetches() : 0;
     telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;

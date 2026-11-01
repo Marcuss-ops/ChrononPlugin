@@ -7,6 +7,7 @@
 
 #include <opencv2/core.hpp>
 
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -74,6 +75,34 @@ int main() {
     CHECK(same_pixels(wrapped, tile));
     CHECK(raster.tile_cache_misses() == 1);
     CHECK(raster.tile_cache_hits() == 2);
+
+    // A cold raster (no prior cache entry) composing the same window must be
+    // pixel-identical: tile reuse may never change what the plate shows.
+    {
+        VectorPlateRaster cold(VectorMapSources{kCountries, kItalyAdmin2});
+        const cv::Mat cold_plate = cold.compose_plate(left, top, 256, 256, 5);
+        CHECK(same_pixels(cold_plate, plate));
+        CHECK(cold.tile_cache_hits() == 0);
+        CHECK(cold.tile_cache_misses() == 1);
+    }
+
+    // A multi-tile window at a fractional offset: the second composition is
+    // served from the tile cache, adds no miss, and stays pixel-identical to a
+    // cold raster's composition of the same window.
+    {
+        const double multi_left = left + 100.0;
+        const double multi_top = top + 60.0;
+        const cv::Mat multi = raster.compose_plate(multi_left, multi_top, 512, 512, 5);
+        const std::int64_t misses_before = raster.tile_cache_misses();
+        const std::int64_t hits_before = raster.tile_cache_hits();
+        const cv::Mat multi_again = raster.compose_plate(multi_left, multi_top, 512, 512, 5);
+        CHECK(same_pixels(multi, multi_again));
+        CHECK(raster.tile_cache_misses() == misses_before);
+        CHECK(raster.tile_cache_hits() > hits_before);
+        VectorPlateRaster cold_multi_raster(VectorMapSources{kCountries, kItalyAdmin2});
+        const cv::Mat cold_multi = cold_multi_raster.compose_plate(multi_left, multi_top, 512, 512, 5);
+        CHECK(same_pixels(multi, cold_multi));
+    }
 
     // The raster carries rings for the zoom it was asked for.
     CHECK(raster.ring_count(5) > 0);
