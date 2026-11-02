@@ -1,6 +1,6 @@
 maps_geo_core_test 5 0.00080058
-maps_map_plate_render_test 4 0.43528
-maps_map_plate_raster_test 5 0.0536503
+maps_map_plate_render_test 4 0
+maps_map_plate_raster_test 8 0.0315285
 maps_camera_label_test 5 0.0012631
 maps_map_plate_telemetry_test 5 0.000658455
 maps_cartography_geodesy 4 0.0343281

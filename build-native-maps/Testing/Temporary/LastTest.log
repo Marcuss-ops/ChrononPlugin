@@ -1,99 +1,19 @@
-Start testing: Oct 28 09:17 UTC
+Start testing: Nov 01 07:36 UTC
 ----------------------------------------------------------
-1/6 Testing: maps_geo_core_test
-1/6 Test: maps_geo_core_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_geo_core_test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_geo_core_test" start time: Oct 28 09:17 UTC
-Output:
-----------------------------------------------------------
-geo_core_test: PASS
-<end of output>
-Test time =   0.00 sec
-----------------------------------------------------------
-Test Passed.
-"maps_geo_core_test" end time: Oct 28 09:17 UTC
-"maps_geo_core_test" time elapsed: 00:00:00
-----------------------------------------------------------
-
-2/6 Testing: maps_map_plate_render_test
-2/6 Test: maps_map_plate_render_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_render_test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_render_test" start time: Oct 28 09:17 UTC
-Output:
-----------------------------------------------------------
-map_plate_render: all checks passed
-<end of output>
-Test time =   1.74 sec
-----------------------------------------------------------
-Test Passed.
-"maps_map_plate_render_test" end time: Oct 28 09:17 UTC
-"maps_map_plate_render_test" time elapsed: 00:00:01
-----------------------------------------------------------
-
-3/6 Testing: maps_renderer_catalog_test
-3/6 Test: maps_renderer_catalog_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_renderer_catalog_test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_renderer_catalog_test" start time: Oct 28 09:17 UTC
-Output:
-----------------------------------------------------------
-map_renderer_catalog: all checks passed
-<end of output>
-Test time =   0.00 sec
-----------------------------------------------------------
-Test Passed.
-"maps_renderer_catalog_test" end time: Oct 28 09:17 UTC
-"maps_renderer_catalog_test" time elapsed: 00:00:00
-----------------------------------------------------------
-
 4/6 Testing: maps_map_plate_raster_test
 4/6 Test: maps_map_plate_raster_test
 Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_raster_test"
 Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_raster_test" start time: Oct 28 09:17 UTC
+"maps_map_plate_raster_test" start time: Nov 01 07:36 UTC
 Output:
 ----------------------------------------------------------
 map_plate_raster: all checks passed
 <end of output>
-Test time =   0.27 sec
+Test time =   0.25 sec
 ----------------------------------------------------------
 Test Passed.
-"maps_map_plate_raster_test" end time: Oct 28 09:17 UTC
+"maps_map_plate_raster_test" end time: Nov 01 07:36 UTC
 "maps_map_plate_raster_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-5/6 Testing: maps_camera_label_test
-5/6 Test: maps_camera_label_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_camera_label_test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_camera_label_test" start time: Oct 28 09:17 UTC
-Output:
-----------------------------------------------------------
-map_camera/map_label_render: all checks passed
-<end of output>
-Test time =   0.01 sec
-----------------------------------------------------------
-Test Passed.
-"maps_camera_label_test" end time: Oct 28 09:17 UTC
-"maps_camera_label_test" time elapsed: 00:00:00
-----------------------------------------------------------
-
-6/6 Testing: maps_map_plate_telemetry_test
-6/6 Test: maps_map_plate_telemetry_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_telemetry_test"
-Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_telemetry_test" start time: Oct 28 09:17 UTC
-Output:
-----------------------------------------------------------
-map_plate_telemetry: all checks passed
-<end of output>
-Test time =   0.00 sec
-----------------------------------------------------------
-Test Passed.
-"maps_map_plate_telemetry_test" end time: Oct 28 09:17 UTC
-"maps_map_plate_telemetry_test" time elapsed: 00:00:00
-----------------------------------------------------------
-
-End testing: Oct 28 09:17 UTC
+End testing: Nov 01 07:36 UTC
