@@ -84,3 +84,13 @@
 15326	15440	1793521248988277717	plugins/maps/libchrononplugin_maps.a	472a1b1c3bd0eb8b
 15440	15818	1793521249100273708	plugins/maps/maps_map_plate_raster_test	681fd7cd71520ad2
 15441	17851	1793521249104273564	plugins/maps/maps_dynamic_map_render	57f0e7d72eef1ff9
+15	26	1793708454587279504	/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/CMakeFiles/cmake.verify_globs	5e9297de7e48f100
+35	20044	1793708454607278602	plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_render.cpp.o	a782fded774bd49f
+20044	20305	1793708474614377239	plugins/maps/libchrononplugin_maps.a	472a1b1c3bd0eb8b
+20305	22694	1793708474878365349	plugins/maps/maps_dynamic_map_render	57f0e7d72eef1ff9
+9	25	1793712726404899527	/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/CMakeFiles/cmake.verify_globs	5e9297de7e48f100
+26	34	1793712726420898774	help	88f9547e10f3f17d
+3	13	1793712730060727201	/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/CMakeFiles/cmake.verify_globs	5e9297de7e48f100
+18	16271	1793712730072726635	plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_render.cpp.o	a782fded774bd49f
+16272	16456	1793712746327960458	plugins/maps/libchrononplugin_maps.a	472a1b1c3bd0eb8b
+16456	18377	1793712746511951786	plugins/maps/maps_dynamic_map_render	57f0e7d72eef1ff9

@@ -76,10 +76,26 @@ std::vector<std::string> encoder_arguments(const EncoderProfile& profile) {
     if (profile.gpu) {
         return {"-c:v", profile.codec, "-gpu", "0", "-preset", profile.preset,
                 "-tune", "hq", "-rc", "vbr", "-cq", std::to_string(profile.quality),
-                "-b:v", "0"};
+                "-b:v", "0", "-profile:v", "high", "-level:v", "4.0",
+                "-refs", "1", "-g", "48", "-keyint_min", "48",
+                "-sc_threshold", "0", "-bf", "0", "-flags", "+cgop",
+                "-color_primaries", "bt709", "-color_trc", "bt709",
+                "-colorspace", "bt709", "-color_range", "tv"};
     }
     std::vector<std::string> args{"-c:v", profile.codec, "-preset", profile.preset,
                                   "-crf", std::to_string(profile.quality)};
+    // Final-job packet-copy uses one canonical AVCDecoderConfigurationRecord.
+    // Map overlays are assembled from raw frames here, so pin the same x264
+    // parameter sets as the final-job fragment producer instead of inheriting
+    // x264 defaults (B-frames, multiple references and no explicit SAR VUI).
+    args.insert(args.end(), {
+        "-vf", "setsar=1",
+        "-profile:v", "high", "-level:v", "4.0", "-refs", "1",
+        "-color_primaries", "bt709", "-color_trc", "bt709",
+        "-colorspace", "bt709", "-color_range", "tv",
+        "-g", "48", "-keyint_min", "48", "-sc_threshold", "0",
+        "-bf", "0", "-flags", "+cgop",
+    });
     if (profile.preset == "slow" && profile.quality == 17) {
         args.insert(args.end(), {"-maxrate", "16M", "-bufsize", "32M"});
     }
