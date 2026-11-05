@@ -15,10 +15,10 @@
 //  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
 //    World Imagery tiles, OpenCV continuous pyramid sampler);
 //  * the deliberately small runtime set published by
-//    `plugins/maps/maps-renderer-catalog.v1.json`: `route_line`,
-//    `multi_leg_flight`, `territory_glow_reveal`, and `area_glow_pulse`.
-//    Concept-gallery treatments are authoring references
-//    only and are not accepted by this renderer;
+//    `plugins/maps/maps-renderer-catalog.v1.json`, including `route_line`,
+//    `multi_leg_flight`, `territory_glow_reveal`, `area_glow_pulse` and the
+//    `territory_tactical_fill` grid treatment. Concept-gallery treatments are
+//    authoring references only and are not accepted by this renderer;
 //  * slow-approach or exponential camera easing, quiet area glow,
 //    GeoJSON territory reveal, route timing, vignette and film grain;
 //  * camera_animation "slow_approach" (the product "dive" shot) over one

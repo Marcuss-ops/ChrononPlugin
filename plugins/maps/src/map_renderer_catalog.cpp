@@ -17,9 +17,11 @@ const std::set<std::string>& supported_map_animations() {
     static const std::set<std::string> kAnimations = {
         "", "route_line", "multi_leg_flight", "territory_glow_reveal",
         "area_glow_pulse", "radar_location_reveal", "satellite_scan_reveal",
-        "territory_flood_fill", "light_beam_drop", "city_network_expansion",
+        "territory_flood_fill", "territory_tactical_fill", "light_beam_drop", "city_network_expansion",
         "territory_extrusion", "map_style_morph", "mountain_ridge_callout",
         "continental_atlas", "historic_location_timeline",
+        "volumetric_laser_scan", "vector_particle_flow", "dark_mirror_diorama",
+        "voronoi_heat_contours", "holographic_postfx",
     };
     return kAnimations;
 }

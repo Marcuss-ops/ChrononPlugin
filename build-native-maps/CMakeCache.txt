@@ -29,6 +29,18 @@ CHRONONPLUGIN_BUILD_TYPOGRAPHY:BOOL=OFF
 //Enable optional Python reference and cartography tests
 CHRONONPLUGIN_ENABLE_PYTHON_MAP_REFERENCE_TESTS:BOOL=OFF
 
+//Path to a file.
+CHRONON_MAPS_EGL_INCLUDE_DIR:PATH=/usr/include
+
+//Path to a library.
+CHRONON_MAPS_EGL_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libEGL.so
+
+//Path to a file.
+CHRONON_MAPS_GLES_INCLUDE_DIR:PATH=/usr/include
+
+//Path to a library.
+CHRONON_MAPS_GLES_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libGLESv2.so
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
 

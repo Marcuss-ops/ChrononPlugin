@@ -1,0 +1,38 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "camera_motion_duration_us": 1200000,
+  "basemap": "chronon_editorial",
+  "camera_animation": "slow_approach",
+  "camera_anchor": [
+    31.7683,
+    35.12
+  ],
+  "camera_start_zoom": 10.2,
+  "camera_end_zoom": 11.2,
+  "map_animation": "vector_particle_flow",
+  "territory_feature": "Jerusalem",
+  "territory_geojson": "plugins/maps/showcases/assets/jerusalem.geojson",
+  "pins": [
+    {
+      "id": "jerusalem",
+      "label": "Jerusalem",
+      "latitude": 31.7683,
+      "longitude": 35.2137
+    }
+  ],
+  "documentary_finish": {
+    "vignette": 0.12,
+    "grain": 0.0
+  },
+  "encoder_profile": {
+    "codec": "h264_nvenc",
+    "gpu": true,
+    "preset": "p6",
+    "quality": 15
+  },
+  "sampler": "cpu"
+}

@@ -190,6 +190,29 @@ target_link_libraries(maps_camera_label_parity_dump PRIVATE chrononplugin_maps)
 add_executable(maps_dynamic_map_render tools/map_native/map_render_cli.cpp)
 target_link_libraries(maps_dynamic_map_render PRIVATE chrononplugin_maps)
 
+# Experimental GPU path: headless EGL + OpenGL ES 3.2, deliberately independent
+# from the OpenCV CPU compositor. The 2.5D scene uses a real DEPTH24 framebuffer
+# and instanced geometry; the particle scene uses an SSBO + compute shader.
+find_path(CHRONON_MAPS_EGL_INCLUDE_DIR EGL/egl.h)
+find_path(CHRONON_MAPS_GLES_INCLUDE_DIR GLES3/gl31.h)
+find_library(CHRONON_MAPS_EGL_LIBRARY NAMES EGL)
+find_library(CHRONON_MAPS_GLES_LIBRARY NAMES GLESv2)
+if(CHRONON_MAPS_EGL_INCLUDE_DIR AND CHRONON_MAPS_GLES_INCLUDE_DIR AND
+   CHRONON_MAPS_EGL_LIBRARY AND CHRONON_MAPS_GLES_LIBRARY)
+    add_executable(maps_gpu_render tools/map_gpu/map_gpu_render.cpp)
+    target_include_directories(maps_gpu_render PRIVATE
+        ${CHRONON_MAPS_EGL_INCLUDE_DIR}
+        ${CHRONON_MAPS_GLES_INCLUDE_DIR})
+    target_link_libraries(maps_gpu_render PRIVATE
+        nlohmann_json::nlohmann_json
+        ${CHRONON_MAPS_EGL_LIBRARY}
+        ${CHRONON_MAPS_GLES_LIBRARY})
+    add_test(NAME maps_gpu_render_self_test COMMAND maps_gpu_render --self-test)
+    set_tests_properties(maps_gpu_render_self_test PROPERTIES
+        SKIP_RETURN_CODE 77
+        TIMEOUT 60)
+endif()
+
 # Distribution (TICKET-MAPS-NATIVE-PORT fase 6): the renderer binary and its
 # boundary catalog install as ONE unit. The host drop-in
 # refactored/scripts/systemd/pipelinegen.service.d/map-native.conf points at

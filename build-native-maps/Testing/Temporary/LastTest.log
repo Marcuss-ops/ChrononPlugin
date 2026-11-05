@@ -1,19 +1,19 @@
-Start testing: Nov 01 07:36 UTC
+Start testing: Nov 04 07:42 UTC
 ----------------------------------------------------------
-4/6 Testing: maps_map_plate_raster_test
-4/6 Test: maps_map_plate_raster_test
-Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_map_plate_raster_test"
+7/7 Testing: maps_gpu_render_self_test
+7/7 Test: maps_gpu_render_self_test
+Command: "/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps/maps_gpu_render" "--self-test"
 Directory: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
-"maps_map_plate_raster_test" start time: Nov 01 07:36 UTC
+"maps_gpu_render_self_test" start time: Nov 04 07:42 UTC
 Output:
 ----------------------------------------------------------
-map_plate_raster: all checks passed
+GPU_SELF_TEST_PASS renderer=NVIDIA RTX A4000/PCIe/SSE2 version=OpenGL ES 3.2 NVIDIA 595.99.02 compute_invocations=1024
 <end of output>
-Test time =   0.25 sec
+Test time =   0.22 sec
 ----------------------------------------------------------
 Test Passed.
-"maps_map_plate_raster_test" end time: Nov 01 07:36 UTC
-"maps_map_plate_raster_test" time elapsed: 00:00:00
+"maps_gpu_render_self_test" end time: Nov 04 07:42 UTC
+"maps_gpu_render_self_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Nov 01 07:36 UTC
+End testing: Nov 04 07:42 UTC

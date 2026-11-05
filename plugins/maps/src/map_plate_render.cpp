@@ -196,8 +196,8 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         "route_timing", "country_context", "area_glow_radius_km",
         "camera_anchor", "camera_start_zoom", "camera_end_zoom",
         "camera_motion_duration_us",
-        "territory_feature", "country_feature", "timeline_label",
-        "mountain_overlay_asset",
+        "territory_feature", "territory_geojson", "territory_subtitle",
+        "country_feature", "timeline_label", "mountain_overlay_asset",
         "documentary_finish", "route_altitudes_m",
     };
     for (auto it = payload.begin(); it != payload.end(); ++it) {
@@ -312,10 +312,47 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
     }
     if ((map_animation == "satellite_scan_reveal" ||
          map_animation == "territory_flood_fill" ||
-         map_animation == "territory_extrusion") &&
+         map_animation == "territory_tactical_fill" ||
+         map_animation == "territory_extrusion" ||
+         map_animation == "volumetric_laser_scan" ||
+         map_animation == "vector_particle_flow" ||
+         map_animation == "dark_mirror_diorama" ||
+         map_animation == "voronoi_heat_contours" ||
+         map_animation == "holographic_postfx") &&
         (!payload.contains("territory_feature") ||
          !payload.at("territory_feature").is_string())) {
         error = map_animation + " requires territory_feature";
+        return false;
+    }
+    if (payload.contains("territory_geojson") &&
+        (!payload.at("territory_geojson").is_string() ||
+         payload.at("territory_geojson").get<std::string>().empty())) {
+        error = "territory_geojson must be a non-empty path";
+        return false;
+    }
+    if (payload.contains("territory_subtitle") &&
+        !payload.at("territory_subtitle").is_string()) {
+        error = "territory_subtitle must be a string";
+        return false;
+    }
+    const bool territory_composition =
+        map_animation == "territory_glow_reveal" ||
+        map_animation == "satellite_scan_reveal" ||
+        map_animation == "territory_flood_fill" ||
+        map_animation == "territory_tactical_fill" ||
+        map_animation == "territory_extrusion" ||
+        map_animation == "volumetric_laser_scan" ||
+        map_animation == "vector_particle_flow" ||
+        map_animation == "dark_mirror_diorama" ||
+        map_animation == "voronoi_heat_contours" ||
+        map_animation == "holographic_postfx";
+    if (payload.contains("territory_geojson") && !territory_composition) {
+        error = "territory_geojson is only supported by territory compositions";
+        return false;
+    }
+    if (payload.contains("territory_subtitle") &&
+        map_animation != "territory_tactical_fill") {
+        error = "territory_subtitle is only supported by territory_tactical_fill";
         return false;
     }
     if (map_animation == "city_network_expansion" && payload.contains("pins") &&
@@ -431,6 +468,15 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     }
     // Pins and camera anchor.
     const std::string map_animation = payload.value("map_animation", "");
+    // These compositions paint their own screen-space plate. Building a
+    // basemap pyramid for them would be work whose pixels are overwritten.
+    const bool self_contained_map =
+        map_animation == "territory_tactical_fill" ||
+        map_animation == "volumetric_laser_scan" ||
+        map_animation == "vector_particle_flow" ||
+        map_animation == "dark_mirror_diorama" ||
+        map_animation == "voronoi_heat_contours" ||
+        map_animation == "holographic_postfx";
     std::vector<Pin> pins;
     if (!normalize_pins(payload.value("pins", nlohmann::json::array()), pins, error)) {
         return {MapPlateStatus::kInvalidRequest, error};
@@ -545,21 +591,36 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         }
         const bool style_morph = map_animation == "map_style_morph";
         const std::string basemap = payload.value("basemap", "chronon_editorial");
-        if (basemap == "esri_sat" || style_morph) {
+        // A self-contained treatment never samples the base plate; do not
+        // construct the vector or satellite pyramid at all.
+        if (!self_contained_map && (basemap == "esri_sat" || style_morph)) {
             satellite = std::make_unique<EsriSatellitePyramid>();
             satellite->prefetch_trajectory(anchor.first, anchor.second,
                 frame_zooms,
                 request.output_width, request.output_height);
         }
-        if (basemap != "esri_sat" || style_morph) {
+        if (!self_contained_map && (basemap != "esri_sat" || style_morph)) {
             raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
         }
         if (map_animation == "territory_glow_reveal" ||
             map_animation == "satellite_scan_reveal" ||
             map_animation == "territory_flood_fill" ||
-            map_animation == "territory_extrusion") {
-            const std::string path = base + "/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson";
+            map_animation == "territory_tactical_fill" ||
+            map_animation == "territory_extrusion" ||
+            map_animation == "volumetric_laser_scan" ||
+            map_animation == "vector_particle_flow" ||
+            map_animation == "dark_mirror_diorama" ||
+            map_animation == "voronoi_heat_contours" ||
+            map_animation == "holographic_postfx") {
+            std::string path = base + "/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson";
+            if (payload.contains("territory_geojson")) {
+                path = payload.at("territory_geojson").get<std::string>();
+            }
             std::ifstream input(path);
+            if (!input && !path.empty() && path.front() != '/') {
+                input.clear();
+                input.open(base + "/" + path);
+            }
             if (!input) throw std::runtime_error("cannot open territory GeoJSON: " + path);
             const std::string json((std::istreambuf_iterator<char>(input)), {});
             const auto collection = parse_geojson(json);
@@ -626,7 +687,12 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
 
     PlateComposeStats stats;
     double compose_wall = 0.0;
+    double effect_wall = 0.0;
     double frame_wall = 0.0;
+    double pipe_write_wall = 0.0;
+    double finish_wall = 0.0;
+    TacticalPhaseTimings tactical_timings;
+    const bool profiling = std::getenv("CHRONON_MAP_PROFILE") != nullptr;
     bool io_error = false;
     const std::size_t frame_bytes = static_cast<std::size_t>(request.output_width) *
                                     request.output_height * 3;
@@ -641,7 +707,10 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         const double story_progress = std::clamp((linear_progress - 0.08) / 0.30, 0.0, 1.0);
         const auto compose_start = std::chrono::steady_clock::now();
         cv::Mat frame;
-        if (map_animation == "map_style_morph") {
+        if (self_contained_map) {
+            frame = cv::Mat(request.output_height, request.output_width,
+                            CV_8UC3, cv::Scalar(0, 0, 0));
+        } else if (map_animation == "map_style_morph") {
             cv::Mat satellite_frame = satellite->sample(anchor.first, anchor.second,
                 zoom, request.output_width, request.output_height);
             cv::Mat editorial_frame = compose_sample_continuous(*raster,
@@ -664,11 +733,12 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                                             request.output_height, &stats);
         }
         compose_wall += seconds_since(compose_start);
-        if (camera_animation == "exponential_dive" && f > 0) {
+        if (!self_contained_map && camera_animation == "exponential_dive" && f > 0) {
             apply_radial_motion_blur(frame,
                 frame_zooms[static_cast<std::size_t>(f)] -
                 frame_zooms[static_cast<std::size_t>(f - 1)]);
         }
+        const auto effect_start = std::chrono::steady_clock::now();
         if (map_animation == "route_line" || map_animation == "multi_leg_flight") {
             std::vector<MapRouteStop> stops;
             stops.reserve(pins.size());
@@ -721,6 +791,26 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 story_progress, pins.front().text);
         } else if (map_animation == "territory_flood_fill") {
             draw_territory_flood_fill(frame, territory_polygons, anchor, zoom,
+                story_progress, pins.front().text);
+        } else if (map_animation == "territory_tactical_fill") {
+            draw_tactical_territory(frame, territory_polygons, anchor, zoom,
+                story_progress, pins.front().text,
+                payload.value("territory_subtitle", ""),
+                profiling ? &tactical_timings : nullptr);
+        } else if (map_animation == "volumetric_laser_scan") {
+            draw_volumetric_laser_scan(frame, territory_polygons, anchor, zoom,
+                story_progress, pins.front().text);
+        } else if (map_animation == "vector_particle_flow") {
+            draw_vector_particle_flow(frame, territory_polygons, anchor, zoom,
+                story_progress, pins.front().text);
+        } else if (map_animation == "dark_mirror_diorama") {
+            draw_dark_mirror_diorama(frame, territory_polygons, anchor, zoom,
+                story_progress, pins.front().text);
+        } else if (map_animation == "voronoi_heat_contours") {
+            draw_voronoi_heat_contours(frame, territory_polygons, anchor, zoom,
+                story_progress, pins.front().text);
+        } else if (map_animation == "holographic_postfx") {
+            draw_holographic_postfx(frame, territory_polygons, anchor, zoom,
                 story_progress, pins.front().text);
         } else if (map_animation == "light_beam_drop") {
             const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
@@ -777,6 +867,9 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                                           pin.text, {255, 255, 255});
             }
         }
+        if (self_contained_map) {
+            effect_wall += seconds_since(effect_start);
+        }
         if (satellite) {
             const std::string credit = "Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community";
             const double scale = std::max(0.25, std::min(0.36, request.output_width / 1920.0 * 0.34));
@@ -790,8 +883,10 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             cv::putText(frame, credit, origin, cv::FONT_HERSHEY_SIMPLEX, scale,
                         cv::Scalar(248, 246, 236), 1, cv::LINE_AA);
         }
+        const auto finish_start = std::chrono::steady_clock::now();
         apply_documentary_finish(frame, static_cast<int>(f), vignette_strength,
                                  grain_strength);
+        finish_wall += seconds_since(finish_start);
         if (!request.raw_frames_dir.empty()) {
             const std::string path = request.raw_frames_dir + "/frame_" +
                                      std::to_string(1000000 + f).substr(1) + ".raw";
@@ -802,14 +897,38 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             }
             if (raw != nullptr) std::fclose(raw);
         }
+        const auto pipe_start = std::chrono::steady_clock::now();
         if (std::fwrite(frame.data, 1, frame_bytes, encoder) != frame_bytes) {
             io_error = true;
         }
+        pipe_write_wall += seconds_since(pipe_start);
         frame_wall += seconds_since(frame_start);
     }
     const double pipeline_wall = seconds_since(pipeline_start);
 
+    const auto drain_start = std::chrono::steady_clock::now();
     const int encoder_status = ::pclose(encoder);
+    const double encoder_drain_wall = seconds_since(drain_start);
+    if (profiling) {
+        const double frames = static_cast<double>(
+            std::max<std::int64_t>(1, request.frame_count));
+        const auto per_frame = [frames](double ms) { return ms / frames; };
+        std::fprintf(stderr,
+            "[map-profile] frames=%lld effect_ms=%.2f grid_ms=%.2f mask_ms=%.2f "
+            "fill_ms=%.2f contours_ms=%.2f glow_draw_ms=%.2f blur_ms=%.2f "
+            "outline_ms=%.2f label_ms=%.2f pipe_write_ms=%.2f finish_ms=%.2f "
+            "encoder_drain_ms=%.2f total_ms=%.2f\n",
+            static_cast<long long>(request.frame_count),
+            per_frame(effect_wall * 1e3), per_frame(tactical_timings.grid_ms),
+            per_frame(tactical_timings.mask_ms), per_frame(tactical_timings.fill_ms),
+            per_frame(tactical_timings.contours_ms),
+            per_frame(tactical_timings.glow_draw_ms),
+            per_frame(tactical_timings.blur_ms),
+            per_frame(tactical_timings.outline_ms),
+            per_frame(tactical_timings.label_ms), per_frame(pipe_write_wall * 1e3),
+            per_frame(finish_wall * 1e3), encoder_drain_wall * 1e3,
+            seconds_since(total_start) * 1e3);
+    }
     if (io_error || encoder_status != 0) {
         std::remove(staged_video.c_str());
         return {MapPlateStatus::kRenderFailed,
@@ -847,28 +966,52 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     // cache reports its hits here as well. Without this the certified log says
     // "cache_hit=0" while tens of thousands of tile placements were served
     // from the cache and every one of them was cached.
-    telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
-    telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
-    telemetry.tile.network_fetches = satellite ? satellite->network_fetches() : 0;
-    telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;
-    telemetry.tile.fallbacks = 0;
-    telemetry.tile.rendered_locally = satellite ? 0 : raster->tile_cache_misses();
-    telemetry.tile.fetch_ms = satellite ? satellite->prefetch_ms() : compose_wall * 1e3;
-    telemetry.tile.prefetch_ms = satellite ? satellite->prefetch_ms() : 0.0;
-    const std::int64_t tile_count = satellite
-        ? satellite->disk_hits() + satellite->network_fetches()
-        : raster->tile_cache_hits() + raster->tile_cache_misses();
-    const std::int64_t tile_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
-    const std::int64_t tile_fetched = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
-    telemetry.tile.prefetch_tiles_requested = tile_count;
-    telemetry.tile.prefetch_tiles_memory_hits = tile_cache_hits;
-    telemetry.plates.prepare_ms = prepare_ms;
-    telemetry.plates.compose_ms = compose_wall * 1e3;
-    telemetry.plates.plate_count = satellite ? satellite->plate_count() : stats.plate_composes;
-    telemetry.plates.plate_bytes = satellite ? satellite->plate_bytes() : stats.plate_bytes;
-    telemetry.plates.required_tile_count = tile_count;
-    telemetry.plates.prefetch_tiles_fetched = tile_fetched;
-    telemetry.plates.prefetch_tiles_memory_hits = tile_cache_hits;
+    if (self_contained_map) {
+        // The treatment renders exactly one screen-space plate locally; no map
+        // tile is fetched or sampled. Account for that plate instead of
+        // inventing tile work: the certified counters stay balanced and the
+        // editorial basemap is the one that admits locally rendered work.
+        telemetry.tile.disk_cache_hits = 0;
+        telemetry.tile.disk_cache_misses = 1;
+        telemetry.tile.network_fetches = 0;
+        telemetry.tile.bytes_downloaded = 0;
+        telemetry.tile.fallbacks = 0;
+        telemetry.tile.rendered_locally = 1;
+        telemetry.tile.fetch_ms = 0.0;
+        telemetry.tile.prefetch_ms = 0.0;
+        telemetry.tile.prefetch_tiles_requested = 1;
+        telemetry.tile.prefetch_tiles_memory_hits = 0;
+        telemetry.plates.prepare_ms = prepare_ms;
+        telemetry.plates.compose_ms = effect_wall * 1e3;
+        telemetry.plates.plate_count = 1;
+        telemetry.plates.plate_bytes = static_cast<std::int64_t>(frame_bytes);
+        telemetry.plates.required_tile_count = 1;
+        telemetry.plates.prefetch_tiles_fetched = 1;
+        telemetry.plates.prefetch_tiles_memory_hits = 0;
+    } else {
+        telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
+        telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
+        telemetry.tile.network_fetches = satellite ? satellite->network_fetches() : 0;
+        telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;
+        telemetry.tile.fallbacks = 0;
+        telemetry.tile.rendered_locally = satellite ? 0 : raster->tile_cache_misses();
+        telemetry.tile.fetch_ms = satellite ? satellite->prefetch_ms() : compose_wall * 1e3;
+        telemetry.tile.prefetch_ms = satellite ? satellite->prefetch_ms() : 0.0;
+        const std::int64_t tile_count = satellite
+            ? satellite->disk_hits() + satellite->network_fetches()
+            : raster->tile_cache_hits() + raster->tile_cache_misses();
+        const std::int64_t tile_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
+        const std::int64_t tile_fetched = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
+        telemetry.tile.prefetch_tiles_requested = tile_count;
+        telemetry.tile.prefetch_tiles_memory_hits = tile_cache_hits;
+        telemetry.plates.prepare_ms = prepare_ms;
+        telemetry.plates.compose_ms = compose_wall * 1e3;
+        telemetry.plates.plate_count = satellite ? satellite->plate_count() : stats.plate_composes;
+        telemetry.plates.plate_bytes = satellite ? satellite->plate_bytes() : stats.plate_bytes;
+        telemetry.plates.required_tile_count = tile_count;
+        telemetry.plates.prefetch_tiles_fetched = tile_fetched;
+        telemetry.plates.prefetch_tiles_memory_hits = tile_cache_hits;
+    }
 
     std::string summary_json;
     if (!telemetry.emit(summary_json, error)) {

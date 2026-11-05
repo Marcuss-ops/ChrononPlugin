@@ -36,6 +36,51 @@ void draw_territory_flood_fill(cv::Mat& frame,
                                std::pair<double, double> camera_anchor,
                                double zoom, double progress,
                                const std::string& label);
+/// Per-phase wall clock for the tactical treatment, in milliseconds.
+/// Optional: callers that do not profile pass nullptr.
+struct TacticalPhaseTimings {
+    double grid_ms = 0.0;
+    double mask_ms = 0.0;
+    double fill_ms = 0.0;
+    double contours_ms = 0.0;
+    double glow_draw_ms = 0.0;
+    double blur_ms = 0.0;
+    double outline_ms = 0.0;
+    double label_ms = 0.0;
+};
+
+void draw_tactical_territory(cv::Mat& frame,
+                             const std::vector<GeoPolygon>& polygons,
+                             std::pair<double, double> camera_anchor,
+                             double zoom, double progress,
+                             const std::string& title,
+                             const std::string& subtitle,
+                             TacticalPhaseTimings* timings = nullptr);
+void draw_volumetric_laser_scan(cv::Mat& frame,
+                                const std::vector<GeoPolygon>& polygons,
+                                std::pair<double, double> camera_anchor,
+                                double zoom, double progress,
+                                const std::string& label);
+void draw_vector_particle_flow(cv::Mat& frame,
+                               const std::vector<GeoPolygon>& polygons,
+                               std::pair<double, double> camera_anchor,
+                               double zoom, double progress,
+                               const std::string& label);
+void draw_dark_mirror_diorama(cv::Mat& frame,
+                              const std::vector<GeoPolygon>& polygons,
+                              std::pair<double, double> camera_anchor,
+                              double zoom, double progress,
+                              const std::string& label);
+void draw_voronoi_heat_contours(cv::Mat& frame,
+                                const std::vector<GeoPolygon>& polygons,
+                                std::pair<double, double> camera_anchor,
+                                double zoom, double progress,
+                                const std::string& label);
+void draw_holographic_postfx(cv::Mat& frame,
+                             const std::vector<GeoPolygon>& polygons,
+                             std::pair<double, double> camera_anchor,
+                             double zoom, double progress,
+                             const std::string& label);
 void draw_light_beam_drop(cv::Mat& frame, cv::Point center, double progress,
                           const std::string& label);
 void draw_city_network(cv::Mat& frame, const std::vector<cv::Point>& nodes,

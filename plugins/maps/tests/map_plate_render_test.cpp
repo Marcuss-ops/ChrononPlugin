@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include <cstdio>
+#include <fstream>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -103,14 +104,18 @@ int main() {
     CHECK(render_map_plate(request_for(single_pin_with("\"map_animation\":\"3d_orbit\"")))
               .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(single_pin_with(
+              "\"map_animation\":\"territory_tactical_fill\"")))
+              .status == MapPlateStatus::kNotImplemented);
+    CHECK(render_map_plate(request_for(single_pin_with(
+              "\"territory_subtitle\":\"not a tactical map\"")))
+              .status == MapPlateStatus::kNotImplemented);
+    CHECK(render_map_plate(request_for(single_pin_with(
               "\"relief_overlay\":\"made_up_style\"")))
               .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(
                               single_pin_with("\"pin_timing\":[{\"start_us\":0,\"end_us\":1}]")))
               .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(single_pin_with("\"basemap\":\"esri_light\"")))
-              .status == MapPlateStatus::kNotImplemented);
-    CHECK(render_map_plate(request_for(single_pin_with("\"area_glow_radius_km\":12.0")))
               .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(single_pin_with("\"route_timing\":{\"seconds_per_city\":1.0,\"travel_seconds\":1.0}")))
               .status == MapPlateStatus::kNotImplemented);
@@ -122,10 +127,6 @@ int main() {
               .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(single_pin_with("\"sampler\":\"opencv_opencl\"")))
               .status == MapPlateStatus::kNotImplemented);
-    auto nvenc = request_for(single_pin_with(
-        "\"encoder_profile\":{\"codec\":\"h264_nvenc\",\"gpu\":true,"
-        "\"preset\":\"p6\",\"quality\":15},\"sampler\":\"cpu\""));
-    CHECK(render_map_plate(nvenc).status == MapPlateStatus::kNotImplemented);
 
     // The five-stop route budget is fail-closed.
     nlohmann::json six_pins = {
@@ -204,6 +205,69 @@ int main() {
         }
         std::remove("/tmp/map_plate_render_test_out.mp4");
         std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // Area glow is a supported composition, not a refused field.
+        const std::string area_glow_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"area_glow_pulse\","
+            "\"area_glow_radius_km\":12.0,\"pins\":[{\"id\":\"a\","
+            "\"label\":\"A\",\"latitude\":41.9,\"longitude\":12.5}]}";
+        const auto area_glow = render_map_plate(request_for(area_glow_payload));
+        CHECK(area_glow.status == MapPlateStatus::kOk);
+        if (area_glow.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // h264_nvenc rejects 64x36 (below its minimum frame size), so the
+        // NVENC contract is exercised at a valid 320x180 resolution.
+        const std::string nvenc_payload =
+            "{\"width\":320,\"height\":180,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"encoder_profile\":{\"codec\":\"h264_nvenc\","
+            "\"gpu\":true,\"preset\":\"p6\",\"quality\":15},\"sampler\":\"cpu\","
+            "\"pins\":[{\"id\":\"a\",\"label\":\"A\",\"latitude\":41.9,"
+            "\"longitude\":12.5}]}";
+        auto nvenc = request_for(nvenc_payload);
+        nvenc.output_width = 320;
+        nvenc.output_height = 180;
+        const auto nvenc_result = render_map_plate(nvenc);
+        CHECK(nvenc_result.status == MapPlateStatus::kOk);
+        if (nvenc_result.status == MapPlateStatus::kOk) {
+            std::ifstream summary_file("/tmp/map_plate_render_test_out.telemetry.json");
+            nlohmann::json summary;
+            summary_file >> summary;
+            CHECK(summary.at("video_encoder") == "h264_nvenc");
+            CHECK(summary.at("gpu_encoder").get<bool>());
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // The tactical treatment accepts a payload-supplied GeoJSON catalog:
+        // this is the arbitrary-territory path used by the Jerusalem showcase.
+        const std::string tactical_geojson = "/tmp/map_plate_tactical_test.geojson";
+        {
+            std::ofstream geojson(tactical_geojson);
+            geojson << R"({"type":"FeatureCollection","features":[{"type":"Feature","properties":{"shapeName":"Testland"},"geometry":{"type":"Polygon","coordinates":[[[12.4,41.8],[12.6,41.8],[12.6,42.0],[12.4,42.0],[12.4,41.8]]]}}]})";
+        }
+        const std::string tactical_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"territory_tactical_fill\","
+            "\"territory_geojson\":\"" + tactical_geojson + "\","
+            "\"territory_feature\":\"Testland\",\"territory_subtitle\":\"Test subtitle\","
+            "\"camera_anchor\":[41.9,12.5],\"camera_start_zoom\":8.0,"
+            "\"camera_end_zoom\":8.5,\"pins\":[{\"id\":\"testland\",\"label\":\"Testland\","
+            "\"latitude\":41.9,\"longitude\":12.5}]}";
+        const auto tactical = render_map_plate(request_for(tactical_payload));
+        CHECK(tactical.status == MapPlateStatus::kOk);
+        if (tactical.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+        std::remove(tactical_geojson.c_str());
     }
 
     if (g_failures != 0) {

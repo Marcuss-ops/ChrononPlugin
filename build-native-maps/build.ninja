@@ -133,7 +133,7 @@ build install/strip: phony CMakeFiles/install/strip.util
 build cmake_object_order_depends_target_chrononplugin_maps: phony || .
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/esri_satellite.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/esri_satellite.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/esri_satellite.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -141,7 +141,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/esri_satellite.cpp.o: C
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/feature_query.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/feature_query.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/feature_query.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -149,7 +149,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/feature_query.cpp.o: CX
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/geo_boolean.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/geo_boolean.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/geo_boolean.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -157,7 +157,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/geo_boolean.cpp.o: CXX_
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/geojson.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/geojson.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/geojson.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -165,7 +165,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/geojson.cpp.o: CXX_COMP
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/historical_timeline.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/historical_timeline.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/historical_timeline.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -173,7 +173,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/historical_timeline.cpp
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_camera.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_camera.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_camera.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -181,7 +181,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_camera.cpp.o: CXX_C
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_label_render.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_label_render.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_label_render.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -189,7 +189,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_label_render.cpp.o:
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_compose.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_plate_compose.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_compose.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -197,7 +197,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_compose.cpp.o
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_raster.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_plate_raster.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_raster.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -205,7 +205,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_raster.cpp.o:
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_render.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_plate_render.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_render.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -213,7 +213,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_render.cpp.o:
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_renderer_catalog.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_renderer_catalog.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_renderer_catalog.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -221,7 +221,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_renderer_catalog.cp
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_telemetry.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_plate_telemetry.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_telemetry.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -229,7 +229,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_plate_telemetry.cpp
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_route_render.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_route_render.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_route_render.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -237,7 +237,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_route_render.cpp.o:
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_story_effects.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/map_story_effects.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_story_effects.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -245,7 +245,7 @@ build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/map_story_effects.cpp.o
   OBJECT_FILE_DIR = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src
 
 build plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/territory_change.cpp.o: CXX_COMPILER__chrononplugin_maps_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/src/territory_change.cpp || cmake_object_order_depends_target_chrononplugin_maps
-  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-c0a1f328de451e82\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEFINES = -DCHRONONPLUGIN_MAPS_RENDERER_FINGERPRINT=\"maps-native-bb4450eda93d8260\" -DCHRONON_MAPS_CATALOG_DIR_DEFAULT=\"/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/../../../ChrononTemplate/catalog\" -DCLIPPER2_MAX_DECIMAL_PRECISION=8 -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
   DEP_FILE = plugins/maps/CMakeFiles/chrononplugin_maps.dir/src/territory_change.cpp.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20
   INCLUDES = -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/include -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/opencv4 -I/home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/third_party/opencv-dev/prefix/usr/include/x86_64-linux-gnu/opencv4 -isystem /home/pierone/src/go-master/projects/Pyt/VeloxEditing/Chronon3d/vcpkg_installed/linux-fast-dev/x64-linux/include
@@ -574,6 +574,39 @@ build plugins/maps/maps_dynamic_map_render: CXX_EXECUTABLE_LINKER__maps_dynamic_
   TARGET_FILE = plugins/maps/maps_dynamic_map_render
   TARGET_PDB = maps_dynamic_map_render.dbg
 
+# =============================================================================
+# Object build statements for EXECUTABLE target maps_gpu_render
+
+
+#############################################
+# Order-only phony target for maps_gpu_render
+
+build cmake_object_order_depends_target_maps_gpu_render: phony || .
+
+build plugins/maps/CMakeFiles/maps_gpu_render.dir/tools/map_gpu/map_gpu_render.cpp.o: CXX_COMPILER__maps_gpu_render_unscanned_Release /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/plugins/maps/tools/map_gpu/map_gpu_render.cpp || cmake_object_order_depends_target_maps_gpu_render
+  DEFINES = -DJSON_DIAGNOSTICS=0 -DJSON_USE_IMPLICIT_CONVERSIONS=1
+  DEP_FILE = plugins/maps/CMakeFiles/maps_gpu_render.dir/tools/map_gpu/map_gpu_render.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20
+  OBJECT_DIR = plugins/maps/CMakeFiles/maps_gpu_render.dir
+  OBJECT_FILE_DIR = plugins/maps/CMakeFiles/maps_gpu_render.dir/tools/map_gpu
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target maps_gpu_render
+
+
+#############################################
+# Link the executable plugins/maps/maps_gpu_render
+
+build plugins/maps/maps_gpu_render: CXX_EXECUTABLE_LINKER__maps_gpu_render_Release plugins/maps/CMakeFiles/maps_gpu_render.dir/tools/map_gpu/map_gpu_render.cpp.o | /usr/lib/x86_64-linux-gnu/libEGL.so /usr/lib/x86_64-linux-gnu/libGLESv2.so
+  FLAGS = -O3 -DNDEBUG
+  LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libEGL.so  /usr/lib/x86_64-linux-gnu/libGLESv2.so
+  OBJECT_DIR = plugins/maps/CMakeFiles/maps_gpu_render.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = plugins/maps/maps_gpu_render
+  TARGET_PDB = maps_gpu_render.dbg
+
 
 #############################################
 # Utility command for test
@@ -667,6 +700,8 @@ build maps_dynamic_map_render: phony plugins/maps/maps_dynamic_map_render
 
 build maps_geo_core_test: phony plugins/maps/maps_geo_core_test
 
+build maps_gpu_render: phony plugins/maps/maps_gpu_render
+
 build maps_map_plate_raster_test: phony plugins/maps/maps_map_plate_raster_test
 
 build maps_map_plate_render_test: phony plugins/maps/maps_map_plate_render_test
@@ -692,7 +727,7 @@ build all: phony plugins/maps/all
 #############################################
 # Folder: /home/pierone/src/go-master/projects/Pyt/VeloxEditing/ChrononPlugin/build-native-maps/plugins/maps
 
-build plugins/maps/all: phony plugins/maps/libchrononplugin_maps.a plugins/maps/maps_geo_core_test plugins/maps/maps_map_plate_render_test plugins/maps/maps_renderer_catalog_test plugins/maps/maps_map_plate_raster_test plugins/maps/maps_camera_label_test plugins/maps/maps_map_plate_telemetry_test plugins/maps/maps_raster_parity_dump plugins/maps/maps_camera_label_parity_dump plugins/maps/maps_dynamic_map_render
+build plugins/maps/all: phony plugins/maps/libchrononplugin_maps.a plugins/maps/maps_geo_core_test plugins/maps/maps_map_plate_render_test plugins/maps/maps_renderer_catalog_test plugins/maps/maps_map_plate_raster_test plugins/maps/maps_camera_label_test plugins/maps/maps_map_plate_telemetry_test plugins/maps/maps_raster_parity_dump plugins/maps/maps_camera_label_parity_dump plugins/maps/maps_dynamic_map_render plugins/maps/maps_gpu_render
 
 # =============================================================================
 # Built-in targets
