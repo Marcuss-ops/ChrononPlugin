@@ -24,12 +24,15 @@ ChrononPlugin/
         map_native/                 # CLI maps_dynamic_map_render + gate di parità
     effects/              # ricette specialistiche immagine/video, renderizzate dal core
     typography/           # preset testuali e authoring delle caption
+    socials/              # strutture social X/Reddit/YouTube/TikTok in RenderPlan V3
 ```
 
 Le ricette d'effetto e glow vivono in `plugins/effects`; preset tipografici e
-authoring delle caption vivono in `plugins/typography`. Chronon3D mantiene le
-primitive di rendering, shaping e animazione generiche e le implementazioni
-Vulkan condivise. Il dominio geo è mantenuto solo in `plugins/maps`.
+authoring delle caption vivono in `plugins/typography`; le strutture social
+(X, Reddit, YouTube, TikTok) e il vocabolario di easing/keyframe vivono in
+`plugins/socials`. Chronon3D mantiene le primitive di rendering, shaping e
+animazione generiche e le implementazioni Vulkan condivise. Il dominio geo è
+mantenuto solo in `plugins/maps`.
 
 ## Regole
 

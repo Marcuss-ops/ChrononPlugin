@@ -30,3 +30,13 @@ option(CHRONONPLUGIN_BUILD_TYPOGRAPHY "Build text authoring and caption recipes"
 if(CHRONONPLUGIN_BUILD_TYPOGRAPHY)
     add_subdirectory(plugins/typography)
 endif()
+find_package(nlohmann_json CONFIG QUIET)
+set(_chrononplugin_socials_default OFF)
+if(nlohmann_json_FOUND)
+    set(_chrononplugin_socials_default ON)
+endif()
+option(CHRONONPLUGIN_BUILD_SOCIALS "Build the social structure authoring plugin"
+    ${_chrononplugin_socials_default})
+if(CHRONONPLUGIN_BUILD_SOCIALS)
+    add_subdirectory(plugins/socials)
+endif()
