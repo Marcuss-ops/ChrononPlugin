@@ -8,6 +8,7 @@
 
 #include "chrononplugin/socials/social_showcase.hpp"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -50,6 +51,15 @@ int main(int argc, char** argv) {
                                                     options);
         Require(plans.size() == 4, "expected four showcase clips");
 
+        // The Drive root is a machine binding, not a C++ default: it comes
+        // from refactored/config.yaml through stack.env / ops/lib/common.sh.
+        const char* drive_root_env = std::getenv("VELOX_DRIVE_OVERLAY_ROOT");
+        Require(drive_root_env && *drive_root_env,
+                "VELOX_DRIVE_OVERLAY_ROOT is not set; source stack.env first");
+        const std::string drive_root = drive_root_env;
+        const std::string drive_url =
+            "https://drive.google.com/drive/u/1/folders/" + drive_root;
+
         json series = {
             {"schema", "chrononplugin.socials-showcase.v1"},
             {"generator", "chrononplugin_emit_socials_showcase"},
@@ -63,9 +73,8 @@ int main(int argc, char** argv) {
                   {"typography", "native Inter text + DejaVu symbol glyphs"},
                   {"backend", "vulkan / require_gpu_native / nvenc"}}},
             {"drive",
-             json{{"folder_id", "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"},
-                  {"folder_url",
-                   "https://drive.google.com/drive/u/1/folders/1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"},
+             json{{"folder_id", drive_root},
+                  {"folder_url", drive_url},
                   {"placement", "root"}}},
             {"clips", json::array()},
         };

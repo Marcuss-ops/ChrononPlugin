@@ -1,5 +1,6 @@
 # build
 build/
+build-native-maps/
 out/
 
 # dipendenze locali (header/package estratti, mai versionati)

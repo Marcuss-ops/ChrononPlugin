@@ -14,9 +14,15 @@ Usage:
 
 from __future__ import annotations
 
+import sys as _velox_sys
+from pathlib import Path as _VeloxPath
+_velox_sys.path.insert(0, str(_VeloxPath(__file__).resolve().parents[4] / "tools"))
+from stack_config import overlay_root as _overlay_root  # noqa: E402
+
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import time
@@ -33,9 +39,11 @@ CLI = REPO / "Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chr
 ASSETS = REPO / "Chronon3d"
 EMITTER = REPO / "ChrononPlugin/build/plugins/socials/chrononplugin_emit_socials_showcase"
 UPLOADER = REPO / "RenderingGen" / "bin" / "drive-upload"
-CREDENTIALS = REPO / "RenderingGen" / "UploadDrive" / "credentials.json"
-TOKEN = REPO / "RenderingGen" / "UploadDrive" / "token.json"
-DRIVE_FOLDER = "1J_xUGo_bchzXDIGqSX04CU44c_Dm3SxS"
+CREDENTIALS = Path(os.environ.get(
+    "VELOX_CREDENTIALS_FILE", "~/.config/velox/credentials.json")).expanduser()
+TOKEN = Path(os.environ.get(
+    "VELOX_TOKEN_FILE", "~/.config/velox/token.json")).expanduser()
+DRIVE_FOLDER = _overlay_root()
 DRIVE_URL = f"https://drive.google.com/drive/u/1/folders/{DRIVE_FOLDER}"
 MANIFEST_NAME = "Socials_Structures_1920x1080_UPLOAD-MANIFEST.md"
 
@@ -53,7 +61,12 @@ def sha256(path: Path) -> str:
 def run_emitter(path: Path) -> None:
     if not path.is_file():
         raise SystemExit(f"emitter not found: {path}")
-    result = subprocess.run([str(path), str(OUT)], text=True, capture_output=True)
+    result = subprocess.run(
+        [str(path), str(OUT)],
+        text=True,
+        capture_output=True,
+        env={**os.environ, "VELOX_DRIVE_OVERLAY_ROOT": DRIVE_FOLDER},
+    )
     if result.returncode != 0:
         raise SystemExit(f"emitter failed:\n{result.stdout}\n{result.stderr}")
     print(result.stdout.strip())
