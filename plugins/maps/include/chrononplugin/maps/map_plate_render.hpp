@@ -12,8 +12,8 @@
 //  * the closed encoder profiles libx264/veryfast/23, libx264/slow/17 and
 //    h264_nvenc/p6/15 (NVENC encodes frames composed by the CPU sampler);
 //  * sampler "cpu" (the native vector plates are CPU-sampled);
-//  * basemap `chronon_editorial` (offline vector) or `esri_sat` (runtime Esri
-//    World Imagery tiles, OpenCV continuous pyramid sampler);
+//  * basemap `chronon_editorial` (offline vector), `esri_sat` (runtime Esri
+//    World Imagery tiles) or `esri_topo` (runtime Esri World Topo Map tiles), OpenCV continuous pyramid sampler;
 //  * the deliberately small runtime set published by
 //    `plugins/maps/maps-renderer-catalog.v1.json`, including `route_line`,
 //    `multi_leg_flight`, `territory_glow_reveal`, `area_glow_pulse` and the

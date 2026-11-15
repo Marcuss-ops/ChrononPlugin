@@ -36,9 +36,13 @@ std::string tile_path(const std::string& cache, int z, std::int64_t x,
             std::to_string(x) / (std::to_string(y) + ".jpg")).string();
 }
 
-std::string tile_url(int z, std::int64_t x, std::int64_t y) {
-    return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/" +
-           std::to_string(z) + "/" + std::to_string(y) + "/" + std::to_string(x);
+std::string tile_url(const std::string& style, int z, std::int64_t x,
+                     std::int64_t y) {
+    const std::string service =
+        style == "esri_topo" ? "World_Topo_Map" : "World_Imagery";
+    return "https://server.arcgisonline.com/ArcGIS/rest/services/" + service +
+           "/MapServer/tile/" + std::to_string(z) + "/" +
+           std::to_string(y) + "/" + std::to_string(x);
 }
 
 std::string curl_config_value(const std::string& value) {
@@ -67,14 +71,18 @@ struct TileDownload {
 };
 }  // namespace
 
-EsriSatellitePyramid::EsriSatellitePyramid(std::string cache_directory) {
+EsriSatellitePyramid::EsriSatellitePyramid(std::string cache_directory,
+                                           std::string tile_style)
+    : tile_style_(tile_style.empty() ? "esri_sat" : std::move(tile_style)) {
     if (cache_directory.empty()) {
         if (const char* override_dir = std::getenv("CHRONON_ESRI_TILE_CACHE_DIR");
             override_dir != nullptr && *override_dir != '\0') {
             cache_directory = override_dir;
+            if (tile_style_ != "esri_sat") cache_directory += "/" + tile_style_;
         } else {
             const char* home = std::getenv("HOME");
-            cache_directory = std::string(home ? home : ".") + "/.cache/chrononplugin/maps/esri_sat";
+            cache_directory = std::string(home ? home : ".") +
+                              "/.cache/chrononplugin/maps/" + tile_style_;
         }
     }
     cache_directory_ = std::move(cache_directory);
@@ -95,7 +103,7 @@ cv::Mat EsriSatellitePyramid::tile(int z, std::int64_t x, std::int64_t y) {
         memory_cache_.emplace(key, image);
         return image;
     }
-    const std::string url = tile_url(z, x, y);
+    const std::string url = tile_url(tile_style_, z, x, y);
     const std::string temp = path.string() + ".part";
     const std::string cmd = "/usr/bin/curl -fsSL --max-time 12 --retry 1 -A 'ChrononPlugin/1.0' -o " +
                             quote(temp) + " " + quote(url) + " >/dev/null 2>&1";
@@ -113,7 +121,7 @@ cv::Mat EsriSatellitePyramid::tile(int z, std::int64_t x, std::int64_t y) {
         }
     }
     std::filesystem::remove(temp, ec);
-    throw std::runtime_error("Esri World Imagery tile fetch/decode failed: " + key);
+    throw std::runtime_error("Esri " + tile_style_ + " tile fetch/decode failed: " + key);
 }
 
 void EsriSatellitePyramid::collect_plate_keys(
@@ -184,7 +192,7 @@ void EsriSatellitePyramid::prefetch_trajectory(
             if (!config) throw std::runtime_error("cannot create Esri curl batch config");
             for (const auto& item : missing) {
                 config << "output = " << curl_config_value(item.temporary_path) << '\n'
-                       << "url = " << curl_config_value(tile_url(item.z, item.x, item.y)) << '\n';
+                       << "url = " << curl_config_value(tile_url(tile_style_, item.z, item.x, item.y)) << '\n';
             }
             if (!config) throw std::runtime_error("cannot write Esri curl batch config");
         }

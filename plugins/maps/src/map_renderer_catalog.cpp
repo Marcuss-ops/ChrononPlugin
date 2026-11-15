@@ -39,7 +39,7 @@ const std::set<std::string>& supported_map_label_animations() {
 
 const std::set<std::string>& supported_map_basemaps() {
     static const std::set<std::string> kBasemaps = {
-        "chronon_editorial", "esri_sat"};
+        "chronon_editorial", "esri_sat", "esri_topo"};
     return kBasemaps;
 }
 

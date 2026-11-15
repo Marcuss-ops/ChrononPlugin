@@ -372,6 +372,11 @@ void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons
 void draw_territory_callout(cv::Mat& frame, cv::Point anchor,
                             const std::string& place_name, double opacity) {
     if (place_name.empty()) return;
+    // `place_name` is already the exact name resolved from the geographic
+    // catalog. Do not attach an administrative qualifier here: the same
+    // renderer handles countries, regions, and local territories, and a
+    // hard-coded "Provincia di" mislabels countries such as Italia/Grecia.
+    const std::string title = place_name;
     opacity = std::clamp(opacity, 0.0, 1.0);
     if (opacity <= 0.0) return;
     cv::Mat overlay = frame.clone();
@@ -381,7 +386,7 @@ void draw_territory_callout(cv::Mat& frame, cv::Point anchor,
     const double font_scale = 1.16 * scale;
     const int font_thickness = std::max(1, cvRound(2.0 * scale));
     int baseline = 0;
-    const cv::Size text_size = cv::getTextSize("Provincia di " + place_name,
+    const cv::Size text_size = cv::getTextSize(title,
         cv::FONT_HERSHEY_SIMPLEX, font_scale, font_thickness, &baseline);
     const int card_width = text_size.width + 2 * pad_x;
     const int card_height = text_size.height + 2 * pad_y;
@@ -405,7 +410,7 @@ void draw_territory_callout(cv::Mat& frame, cv::Point anchor,
                cv::LINE_AA);
     const cv::Point text_origin(card.x + pad_x,
         card.y + pad_y + text_size.height);
-    cv::putText(overlay, "Provincia di " + place_name, text_origin,
+    cv::putText(overlay, title, text_origin,
                 cv::FONT_HERSHEY_SIMPLEX, font_scale,
                 cv::Scalar(251, 252, 253), font_thickness, cv::LINE_AA);
     cv::addWeighted(frame, 1.0 - opacity, overlay, opacity, 0.0, frame);

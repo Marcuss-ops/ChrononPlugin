@@ -195,7 +195,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         "camera_animation", "label_animation", "map_animation", "basemap",
         "route_timing", "country_context", "area_glow_radius_km",
         "camera_anchor", "camera_start_zoom", "camera_end_zoom",
-        "camera_motion_duration_us",
+        "camera_motion_duration_us", "map_level",
         "territory_feature", "territory_geojson", "territory_subtitle",
         "country_feature", "timeline_label", "mountain_overlay_asset",
         "documentary_finish", "route_altitudes_m",
@@ -368,7 +368,8 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
     const std::string basemap = payload.value("basemap", "");
     if (!basemap.empty() && supported_map_basemaps().count(basemap) == 0) {
         error = "basemap '" + basemap + "' is not available natively: the "
-                "native renderer supports Esri World Imagery and chronon_editorial";
+                "native renderer supports Esri World Topo Map, World Imagery "
+                "and chronon_editorial";
         return false;
     }
     return true;
@@ -591,15 +592,17 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         }
         const bool style_morph = map_animation == "map_style_morph";
         const std::string basemap = payload.value("basemap", "chronon_editorial");
+        const bool esri_tile_basemap = basemap == "esri_sat" || basemap == "esri_topo";
         // A self-contained treatment never samples the base plate; do not
         // construct the vector or satellite pyramid at all.
-        if (!self_contained_map && (basemap == "esri_sat" || style_morph)) {
-            satellite = std::make_unique<EsriSatellitePyramid>();
+        if (!self_contained_map && (esri_tile_basemap || style_morph)) {
+            satellite = std::make_unique<EsriSatellitePyramid>(
+                "", basemap == "esri_topo" ? "esri_topo" : "esri_sat");
             satellite->prefetch_trajectory(anchor.first, anchor.second,
                 frame_zooms,
                 request.output_width, request.output_height);
         }
-        if (!self_contained_map && (basemap != "esri_sat" || style_morph)) {
+        if (!self_contained_map && (!esri_tile_basemap || style_morph)) {
             raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
         }
         if (map_animation == "territory_glow_reveal" ||
@@ -770,7 +773,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             const double title_opacity = std::clamp(
                 (time_us - title_fade_start_us) / 500'000.0, 0.0, 1.0);
             draw_territory_callout(frame, {x, y},
-                payload.at("territory_feature").get<std::string>(), title_opacity);
+                pins.front().text, title_opacity);
         } else if (map_animation == "area_glow_pulse") {
             const double latitude = pins.front().lat;
             const double metres_per_pixel = 156543.03392 *
@@ -944,7 +947,11 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     // Certified telemetry — distinguish downloaded/cached imagery tiles from
     // locally rasterized editorial tiles.
     DynamicMapTelemetry telemetry;
-    telemetry.basemap = satellite ? "esri_sat" : "chronon_editorial";
+    const std::string rendered_basemap =
+        nlohmann::json::parse(request.payload_json).value("basemap", "chronon_editorial");
+    telemetry.basemap = satellite
+        ? (rendered_basemap == "esri_topo" ? "esri_topo" : "esri_sat")
+        : "chronon_editorial";
     telemetry.frames = request.frame_count;
     telemetry.width = request.output_width;
     telemetry.height = request.output_height;

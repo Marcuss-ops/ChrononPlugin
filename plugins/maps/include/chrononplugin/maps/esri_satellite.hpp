@@ -11,11 +11,13 @@
 
 namespace chrononplugin::maps {
 
-/// Runtime Esri World Imagery tile pyramid with a persistent on-disk cache.
-/// Tiles are decoded and continuously resampled through OpenCV.
+/// Runtime Esri tile pyramid (World Imagery or World Topo Map) with a
+/// persistent on-disk cache. Tiles are decoded and continuously resampled
+/// through OpenCV.
 class EsriSatellitePyramid {
 public:
-    explicit EsriSatellitePyramid(std::string cache_directory = {});
+    explicit EsriSatellitePyramid(std::string cache_directory = {},
+                                  std::string tile_style = "esri_sat");
     [[nodiscard]] cv::Mat sample(double lat, double lon, double zoom,
                                  int width, int height);
     /// Collect every tile sampled by the deterministic camera path and fetch
@@ -37,6 +39,7 @@ private:
     void collect_plate_keys(std::set<std::tuple<int, std::int64_t, std::int64_t>>& keys,
                             double lat, double lon, int z, int width, int height) const;
     std::string cache_directory_;
+    std::string tile_style_ = "esri_sat";
     std::unordered_map<std::string, cv::Mat> memory_cache_;
     std::int64_t network_fetches_ = 0;
     std::int64_t bytes_downloaded_ = 0;
