@@ -91,6 +91,8 @@ else()
 endif()
 
 add_library(chrononplugin_maps STATIC
+    src/editorial_map_scene.cpp
+    src/editorial_map_style.cpp
     src/esri_satellite.cpp
     src/feature_query.cpp
     src/geo_boolean.cpp
@@ -114,7 +116,9 @@ if(NOT DEFINED CHRONON_MAPS_CATALOG_DIR)
     set(CHRONON_MAPS_CATALOG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../ChrononTemplate/catalog")
 endif()
 target_compile_definitions(chrononplugin_maps PRIVATE
-    CHRONON_MAPS_CATALOG_DIR_DEFAULT="${CHRONON_MAPS_CATALOG_DIR}")
+    CHRONON_MAPS_CATALOG_DIR_DEFAULT="${CHRONON_MAPS_CATALOG_DIR}"
+    CHRONON_MAPS_EDITORIAL_STATES_DEFAULT="${CMAKE_CURRENT_SOURCE_DIR}/assets/us_states_editorial.geojson"
+    CHRONON_MAPS_COUNTRIES_DEFAULT="${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson")
 
 # Bake the native renderer fingerprint from the renderer sources: the cache
 # identity must change whenever the renderer code changes
@@ -190,6 +194,49 @@ target_link_libraries(maps_camera_label_parity_dump PRIVATE chrononplugin_maps)
 add_executable(maps_dynamic_map_render tools/map_native/map_render_cli.cpp)
 target_link_libraries(maps_dynamic_map_render PRIVATE chrononplugin_maps)
 
+# Editorial scene emitter: the vector bridge. It projects/simplifies the same
+# boundary catalogs and writes the neutral chrononplugin.editorial-map-scene.v1
+# DTO; ChrononTemplate lowers that document to a RenderPlan. No FreeType and no
+# OpenCV raster stage are involved.
+add_executable(maps_editorial_scene_emit
+    tools/map_native/editorial_scene_emit.cpp)
+target_link_libraries(maps_editorial_scene_emit PRIVATE chrononplugin_maps)
+
+# Editorial style gallery: six documentary map treatments rendered natively
+# from the simplified US-states catalog. FreeType is optional for the rest of
+# the plugin, so the tool is built only where the font library is available.
+find_package(Freetype QUIET)
+if(Freetype_FOUND)
+    # EditorialMapPack is a reusable rendering library, not a one-off gallery.
+    # Keeping it separate from chrononplugin_maps means the certified map lane
+    # does not gain a hard FreeType dependency; only consumers that ask for the
+    # editorial treatments link this target.
+    add_library(chrononplugin_editorial_map_pack STATIC
+        src/editorial_map_pack.cpp)
+    target_link_libraries(chrononplugin_editorial_map_pack PUBLIC
+        chrononplugin_maps
+        Freetype::Freetype)
+    target_compile_definitions(chrononplugin_editorial_map_pack PRIVATE
+        CHRONON_MAPS_EDITORIAL_STATES_DEFAULT="${CMAKE_CURRENT_SOURCE_DIR}/assets/us_states_editorial.geojson"
+        CHRONON_MAPS_COUNTRIES_DEFAULT="${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
+        CHRONON_MAPS_FONTS_DIR_DEFAULT="${CMAKE_CURRENT_SOURCE_DIR}/../../../Chronon3d/assets/fonts")
+
+    add_executable(maps_editorial_style_gallery
+        tools/map_native/editorial_style_gallery.cpp)
+    target_link_libraries(maps_editorial_style_gallery PRIVATE
+        chrononplugin_editorial_map_pack)
+
+    # RenderingGen invokes maps_dynamic_map_render for every map item. The
+    # editorial compositions are handled by the pack before the generic map
+    # plate path, so the published catalog entry is executable, not decorative.
+    target_link_libraries(maps_dynamic_map_render PRIVATE
+        chrononplugin_editorial_map_pack)
+    target_compile_definitions(maps_dynamic_map_render PRIVATE
+        CHRONON_MAPS_HAVE_EDITORIAL_PACK=1)
+else()
+    message(STATUS "Freetype not found; EditorialMapPack and maps_editorial_style_gallery are disabled")
+endif()
+
 # Experimental GPU path: headless EGL + OpenGL ES 3.2, deliberately independent
 # from the OpenCV CPU compositor. The 2.5D scene uses a real DEPTH24 framebuffer
 # and instanced geometry; the particle scene uses an SSBO + compute shader.
@@ -229,6 +276,8 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/maps-renderer-catalog.v1.json"
 # countries + geoBoundaries ITA ADM2): the ChrononTemplate catalog also holds
 # plates and fixtures that never belong in a runtime image.
 install(FILES "${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/us_states_editorial.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog")
 install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
