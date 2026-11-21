@@ -52,6 +52,9 @@ struct EditorialMapRequest {
     int fps_den = 1;
     int frame_count = 240;
     int crf = 18;
+    bool gpu_encoder = false;
+    int gpu_index = 0;
+    int gpu_quality = 15;
     int threads = 0;  // 0 = OpenCV/default pool, >0 = explicit worker count
     std::string ffmpeg = "ffmpeg";
 
@@ -63,6 +66,9 @@ struct EditorialMapRequest {
     // Editorial content. Defaults reproduce the Indiana / Washington D.C.
     // reference pair.
     std::string highlight_state = "Indiana";
+    // Optional country target. When set, the pack composes the same editorial
+    // treatment around this country instead of using the US-states catalog.
+    std::string highlight_country;
     std::string title = "INDIANA";
     std::string subtitle = "THE HOOSIER STATE";
     std::string pin_label = "Indianapolis";

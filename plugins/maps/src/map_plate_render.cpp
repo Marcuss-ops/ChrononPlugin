@@ -9,10 +9,13 @@
 #include "chrononplugin/maps/map_plate_render.hpp"
 
 #include <chrono>
+#include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <filesystem>
 #include <iterator>
 #include <memory>
 #include <set>
@@ -123,10 +126,132 @@ struct Pin {
     double lon = 0.0;
 };
 
+struct PlaceViewport {
+    std::pair<double, double> anchor{0.0, 0.0};
+    double fit_zoom = 5.2;
+};
+
+std::string normalized_place(std::string value) {
+    std::string out;
+    out.reserve(value.size());
+    for (const unsigned char ch : value) {
+        if (std::isspace(ch) || ch == '-' || ch == '_') continue;
+        out.push_back(static_cast<char>(std::tolower(ch)));
+    }
+    if (out == "italia") return "italy";
+    if (out == "milan") return "milano";
+    if (out == "lombardy") return "lombardia";
+    if (out == "tuscany") return "toscana";
+    return out;
+}
+
+bool feature_name_matches(const GeoFeature& feature, const std::string& place,
+                          const std::vector<std::string>& keys) {
+    for (const auto& key : keys) {
+        const auto it = feature.properties.find(key);
+        if (it != feature.properties.end() &&
+            normalized_place(it->second) == place) return true;
+    }
+    return false;
+}
+
+bool load_named_place(const std::string& catalog, const std::string& requested,
+                      std::vector<GeoPolygon>& polygons, PlaceViewport& viewport,
+                      int width, int height, std::string& error) {
+    std::string place = normalized_place(requested);
+    const std::size_t comma = place.find(',');
+    if (comma != std::string::npos) place.resize(comma);
+    const std::vector<std::pair<std::string, std::vector<std::string>>> sources{
+        {catalog + "/ne_50m_admin_0_countries.geojson", {"ADMIN", "NAME"}},
+        {catalog + "/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson", {"shapeName"}},
+        {catalog + "/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson", {"shapeName"}},
+        {catalog + "/italy_admin/geoBoundaries_ITA_ADM1.simplified.geojson", {"shapeName"}},
+    };
+    try {
+        for (const auto& [path, keys] : sources) {
+            std::ifstream input(path);
+            if (!input) continue;
+            const std::string json((std::istreambuf_iterator<char>(input)), {});
+            const auto collection = parse_geojson(json);
+            for (const auto& feature : collection.features) {
+                if (!feature_name_matches(feature, place, keys)) continue;
+                polygons = feature.polygons;
+            double min_lon = 180.0, max_lon = -180.0;
+            double min_lat = 90.0, max_lat = -90.0;
+            for (const auto& polygon : polygons) {
+                if (polygon.rings.empty()) continue;
+                for (const auto& point : polygon.rings.front()) {
+                    min_lon = std::min(min_lon, point[0]);
+                    max_lon = std::max(max_lon, point[0]);
+                    min_lat = std::min(min_lat, point[1]);
+                    max_lat = std::max(max_lat, point[1]);
+                }
+            }
+                if (polygons.empty() || min_lon >= max_lon || min_lat >= max_lat) {
+                    error = "place '" + requested + "' has no drawable boundary";
+                    return false;
+                }
+                const auto mercator_y = [](double lat) {
+                const double clamped = std::clamp(lat, -85.05112878, 85.05112878);
+                const double radians = clamped * 3.14159265358979323846 / 180.0;
+                return (1.0 - std::asinh(std::tan(radians)) / 3.14159265358979323846) * 0.5;
+            };
+                const double span_x = (max_lon - min_lon) / 360.0;
+                const double span_y = std::abs(mercator_y(max_lat) - mercator_y(min_lat));
+                const double fit_x = (width * 0.78) / (256.0 * span_x);
+                const double fit_y = (height * 0.82) / (256.0 * span_y);
+                viewport.fit_zoom = std::clamp(std::log2(std::min(fit_x, fit_y)), 0.0, 18.0);
+                const double north_y = mercator_y(max_lat);
+                const double south_y = mercator_y(min_lat);
+                const double center_y = (north_y + south_y) * 0.5;
+                const double center_lat = std::atan(std::sinh(
+                3.14159265358979323846 * (1.0 - 2.0 * center_y))) *
+                180.0 / 3.14159265358979323846;
+                viewport.anchor = {center_lat, (min_lon + max_lon) * 0.5};
+                return true;
+            }
+        }
+    } catch (const std::exception& exc) {
+        error = "cannot resolve map_place '" + requested + "': " + exc.what();
+        return false;
+    }
+    error = "map_place '" + requested + "' was not found in the local country or Italy administrative boundary catalogs";
+    return false;
+}
+
+void draw_named_place_fill(cv::Mat& frame, const std::vector<GeoPolygon>& polygons,
+                           std::pair<double, double> anchor, double zoom,
+                           double progress) {
+    if (frame.empty() || polygons.empty()) return;
+    cv::Mat mask(frame.size(), CV_8UC1, cv::Scalar(0));
+    for (const auto& polygon : polygons) {
+        for (std::size_t ring = 0; ring < polygon.rings.size(); ++ring) {
+            std::vector<cv::Point> points;
+            for (const auto& coordinate : polygon.rings[ring]) {
+                const auto [x, y] = geo_to_screen(coordinate[1], coordinate[0], anchor,
+                    zoom, frame.cols, frame.rows);
+                points.emplace_back(x, y);
+            }
+            if (points.size() < 3) continue;
+            cv::fillPoly(mask, std::vector<std::vector<cv::Point>>{points},
+                         cv::Scalar(ring == 0 ? 255 : 0), cv::LINE_AA);
+        }
+    }
+    const double alpha = 0.48 * std::clamp(progress, 0.0, 1.0);
+    cv::Mat color(frame.size(), CV_8UC3, cv::Scalar(54, 92, 226));
+    cv::Mat blended;
+    cv::addWeighted(frame, 1.0 - alpha, color, alpha, 0.0, blended);
+    blended.copyTo(frame, mask);
+    cv::Mat edge(frame.size(), CV_8UC1, cv::Scalar(0));
+    cv::Canny(mask, edge, 60, 140);
+    cv::Mat outline(frame.size(), CV_8UC3, cv::Scalar(255, 180, 84));
+    outline.copyTo(frame, edge);
+}
+
 /// normalize_map_pins: one stop per coordinate (round-4 key), fail-closed
 /// above the five-stop route budget.
 bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
-                    std::string& error) {
+                    std::string& error, bool allow_unlabelled = false) {
     if (!raw_pins.is_array()) {
         error = "pins must be an array";
         return false;
@@ -142,7 +267,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         pin.lon = raw.at("longitude").get<double>();
         const std::string label = raw.value("label", "");
         pin.text = label.empty() ? raw.value("id", "") : label;
-        if (pin.text.empty()) {
+        if (pin.text.empty() && !allow_unlabelled) {
             error = "every pin requires a label or id";
             return false;
         }
@@ -152,7 +277,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
             pins.push_back(std::move(pin));
         }
     }
-    if (pins.empty()) {
+    if (pins.empty() && !allow_unlabelled) {
         error = "the map plate requires at least one pin";
         return false;
     }
@@ -196,6 +321,8 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         "route_timing", "country_context", "area_glow_radius_km",
         "camera_anchor", "camera_start_zoom", "camera_end_zoom",
         "camera_motion_duration_us", "map_level",
+        "map_place", "show_location_tag", "show_text",
+        "map_preset",
         "territory_feature", "territory_geojson", "territory_subtitle",
         "country_feature", "timeline_label", "mountain_overlay_asset",
         "documentary_finish", "route_altitudes_m",
@@ -242,6 +369,9 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
 [[nodiscard]] bool supported_semantics(const nlohmann::json& payload,
                                        std::string& error) {
     const std::string map_animation = payload.value("map_animation", "");
+    const bool has_map_place = payload.contains("map_place") &&
+        payload.at("map_place").is_string() &&
+        !payload.at("map_place").get<std::string>().empty();
     if (supported_map_animations().find(map_animation) ==
         supported_map_animations().end()) {
         error = "map composition '" + map_animation +
@@ -279,13 +409,17 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         error = "camera_animation must be slow_approach or exponential_dive";
         return false;
     }
-    if (map_animation == "territory_glow_reveal" &&
+    if (payload.contains("map_place") && !has_map_place) {
+        error = "map_place must be a non-empty place name";
+        return false;
+    }
+    if (map_animation == "territory_glow_reveal" && !has_map_place &&
         (!payload.contains("territory_feature") ||
          !payload.at("territory_feature").is_string())) {
         error = "territory_glow_reveal requires territory_feature";
         return false;
     }
-    if (map_animation == "area_glow_pulse" &&
+    if (map_animation == "area_glow_pulse" && !has_map_place &&
         (!std::isfinite(payload.value("area_glow_radius_km", 0.0)) ||
          payload.value("area_glow_radius_km", 0.0) <= 0.0)) {
         error = "area_glow_pulse requires a positive area_glow_radius_km";
@@ -293,18 +427,19 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
     }
     if ((map_animation == "continental_atlas" ||
          map_animation == "historic_location_timeline") &&
+        !has_map_place &&
         (!payload.contains("country_feature") ||
          !payload.at("country_feature").is_string())) {
         error = map_animation + " requires country_feature";
         return false;
     }
-    if (map_animation == "mountain_ridge_callout" &&
+    if (map_animation == "mountain_ridge_callout" && !has_map_place &&
         (!payload.contains("mountain_overlay_asset") ||
          !payload.at("mountain_overlay_asset").is_string())) {
         error = "mountain_ridge_callout requires mountain_overlay_asset";
         return false;
     }
-    if (map_animation == "historic_location_timeline" &&
+    if (map_animation == "historic_location_timeline" && !has_map_place &&
         (!payload.contains("timeline_label") ||
          !payload.at("timeline_label").is_string())) {
         error = "historic_location_timeline requires timeline_label";
@@ -318,7 +453,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
          map_animation == "vector_particle_flow" ||
          map_animation == "dark_mirror_diorama" ||
          map_animation == "voronoi_heat_contours" ||
-         map_animation == "holographic_postfx") &&
+         map_animation == "holographic_postfx") && !has_map_place &&
         (!payload.contains("territory_feature") ||
          !payload.at("territory_feature").is_string())) {
         error = map_animation + " requires territory_feature";
@@ -346,7 +481,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         map_animation == "dark_mirror_diorama" ||
         map_animation == "voronoi_heat_contours" ||
         map_animation == "holographic_postfx";
-    if (payload.contains("territory_geojson") && !territory_composition) {
+    if (payload.contains("territory_geojson") && !territory_composition && !has_map_place) {
         error = "territory_geojson is only supported by territory compositions";
         return false;
     }
@@ -355,7 +490,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         error = "territory_subtitle is only supported by territory_tactical_fill";
         return false;
     }
-    if (map_animation == "city_network_expansion" && payload.contains("pins") &&
+    if (map_animation == "city_network_expansion" && !has_map_place && payload.contains("pins") &&
         payload.at("pins").size() < 2) {
         error = "city_network_expansion requires at least two pins";
         return false;
@@ -478,12 +613,38 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         map_animation == "dark_mirror_diorama" ||
         map_animation == "voronoi_heat_contours" ||
         map_animation == "holographic_postfx";
-    std::vector<Pin> pins;
-    if (!normalize_pins(payload.value("pins", nlohmann::json::array()), pins, error)) {
+    const std::string base = catalog_dir();
+    if (base.empty()) {
+        return {MapPlateStatus::kRenderFailed,
+                "no map boundary catalog configured (CHRONON_MAPS_CATALOG_DIR)"};
+    }
+    const std::string countries = base + "/ne_50m_admin_0_countries.geojson";
+    const std::string admin2 =
+        base + "/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson";
+    const std::string map_place = payload.value("map_place", "");
+    PlaceViewport place_viewport;
+    std::vector<GeoPolygon> named_place_polygons;
+    if (!map_place.empty() &&
+        !load_named_place(base, map_place, named_place_polygons,
+                          place_viewport, request.output_width,
+                          request.output_height, error)) {
         return {MapPlateStatus::kInvalidRequest, error};
     }
+    const bool show_text = payload.value("show_text", true);
+    std::vector<Pin> pins;
+    if (!normalize_pins(payload.value("pins", nlohmann::json::array()), pins,
+                         error, !map_place.empty())) {
+        return {MapPlateStatus::kInvalidRequest, error};
+    }
+    if (pins.empty() && !map_place.empty()) {
+        pins.push_back(Pin{"", place_viewport.anchor.first,
+                           place_viewport.anchor.second});
+    }
+    if (!show_text) {
+        for (auto& pin : pins) pin.text.clear();
+    }
     if ((map_animation == "route_line" || map_animation == "multi_leg_flight") &&
-        pins.size() < 2) {
+        pins.size() < 2 && map_place.empty()) {
         return {MapPlateStatus::kInvalidRequest,
                 "route animation requires at least two grounded map pins"};
     }
@@ -520,7 +681,9 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         return {MapPlateStatus::kInvalidRequest,
                 "documentary_finish vignette/grain values are outside their supported range"};
     }
-    std::pair<double, double> anchor{pins.front().lat, pins.front().lon};
+    std::pair<double, double> anchor = map_place.empty()
+        ? std::pair<double, double>{pins.front().lat, pins.front().lon}
+        : place_viewport.anchor;
     if (payload.contains("camera_anchor")) {
         const auto& a = payload.at("camera_anchor");
         if (!a.is_array() || a.size() != 2) {
@@ -528,13 +691,19 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                     "camera_anchor must be a [lat, lon] pair"};
         }
         anchor = {a.at(0).get<double>(), a.at(1).get<double>()};
-    } else if (pins.size() > 1) {
+    } else if (pins.size() > 1 && map_place.empty()) {
         return {MapPlateStatus::kNotImplemented,
                 "multi-pin map tours are not ported natively yet; provide an "
                 "explicit camera_anchor or a single pin"};
     }
-    const double start_zoom = payload.value("camera_start_zoom", 5.2);
-    const double end_zoom = payload.value("camera_end_zoom", 17.8);
+    const bool auto_place_zoom = !map_place.empty() &&
+        !payload.contains("camera_start_zoom") && !payload.contains("camera_end_zoom");
+    const double default_start_zoom = auto_place_zoom
+        ? std::max(0.0, place_viewport.fit_zoom - 0.24) : 5.2;
+    const double default_end_zoom = auto_place_zoom
+        ? std::min(18.0, place_viewport.fit_zoom + 0.08) : 17.8;
+    const double start_zoom = payload.value("camera_start_zoom", default_start_zoom);
+    const double end_zoom = payload.value("camera_end_zoom", default_end_zoom);
     const std::int64_t duration_us = payload.value("duration_us", std::int64_t{0});
     const std::int64_t motion_duration_us = payload.value(
         "camera_motion_duration_us", duration_us);
@@ -562,16 +731,8 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         }
     }
 
-    // Boundary sources for the vector plates.
-    const std::string base = catalog_dir();
-    if (base[0] == '\0') {
-        return {MapPlateStatus::kRenderFailed,
-                "no map boundary catalog configured (CHRONON_MAPS_CATALOG_DIR)"};
-    }
-    const std::string countries = base + "/ne_50m_admin_0_countries.geojson";
-    const std::string admin2 =
-        base + "/italy_admin/geoBoundaries_ITA_ADM2.simplified.geojson";
     std::vector<GeoPolygon> territory_polygons;
+    if (!map_place.empty()) territory_polygons = named_place_polygons;
     GeoFeatureCollection country_features;
     cv::Mat mountain_overlay;
 
@@ -580,10 +741,16 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
     std::unique_ptr<VectorPlateRaster> raster;
     std::unique_ptr<EsriSatellitePyramid> satellite;
     try {
-        if (map_animation == "mountain_ridge_callout") {
-            const std::string overlay_path =
+        if (map_animation == "mountain_ridge_callout" &&
+            payload.contains("mountain_overlay_asset")) {
+            std::string overlay_path =
                 payload.at("mountain_overlay_asset").get<std::string>();
             mountain_overlay = cv::imread(overlay_path, cv::IMREAD_UNCHANGED);
+            if (mountain_overlay.empty() &&
+                !std::filesystem::path(overlay_path).is_absolute()) {
+                overlay_path = base + "/" + overlay_path;
+                mountain_overlay = cv::imread(overlay_path, cv::IMREAD_UNCHANGED);
+            }
             if (mountain_overlay.empty() || mountain_overlay.channels() != 4) {
                 throw std::runtime_error(
                     "mountain_overlay_asset must be a readable RGBA image: " +
@@ -601,11 +768,18 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             satellite->prefetch_trajectory(anchor.first, anchor.second,
                 frame_zooms,
                 request.output_width, request.output_height);
-        }
-        if (!self_contained_map && (!esri_tile_basemap || style_morph)) {
-            raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2});
-        }
-        if (map_animation == "territory_glow_reveal" ||
+        }		if (!self_contained_map && (!esri_tile_basemap || style_morph)) {
+			// ELIM-05: opt-in persistent tile cache. Empty/unset env keeps the
+			// historical per-render behaviour; the directory is bounded and the
+			// tiles are content-addressed by source geometry.
+			chrononplugin::maps::DiskCacheOptions disk;
+			if (const char* cache_dir = std::getenv("CHRONON_MAP_TILE_CACHE_DIR");
+				cache_dir != nullptr && *cache_dir != '\0') {
+				disk.dir = cache_dir;
+			}
+			raster = std::make_unique<VectorPlateRaster>(VectorMapSources{countries, admin2}, disk);
+		}
+        if (map_place.empty() && (map_animation == "territory_glow_reveal" ||
             map_animation == "satellite_scan_reveal" ||
             map_animation == "territory_flood_fill" ||
             map_animation == "territory_tactical_fill" ||
@@ -614,7 +788,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             map_animation == "vector_particle_flow" ||
             map_animation == "dark_mirror_diorama" ||
             map_animation == "voronoi_heat_contours" ||
-            map_animation == "holographic_postfx") {
+            map_animation == "holographic_postfx")) {
             std::string path = base + "/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson";
             if (payload.contains("territory_geojson")) {
                 path = payload.at("territory_geojson").get<std::string>();
@@ -639,12 +813,12 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 throw std::runtime_error("territory feature not found in GeoJSON: " + target_name);
         }
         if (map_animation == "continental_atlas" ||
-            map_animation == "historic_location_timeline") {
+            (map_animation == "historic_location_timeline" && map_place.empty())) {
             std::ifstream input(countries);
             if (!input) throw std::runtime_error("cannot open country GeoJSON: " + countries);
             const std::string json((std::istreambuf_iterator<char>(input)), {});
             const auto collection = parse_geojson(json);
-            const std::string target_name = payload.at("country_feature").get<std::string>();
+            std::string target_name = payload.value("country_feature", map_place);
             if (map_animation == "continental_atlas") {
                 country_features = collection;
             } else {
@@ -707,7 +881,12 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         const double zoom = frame_zooms[static_cast<std::size_t>(f)];
         const double linear_progress = static_cast<double>(f) /
             static_cast<double>(std::max<std::int64_t>(1, request.frame_count - 1));
-        const double story_progress = std::clamp((linear_progress - 0.08) / 0.30, 0.0, 1.0);
+        // A named-place render is a map-style preview. Keep its geographic
+        // treatment in the completed pose for the whole clip; only the camera
+        // performs the requested gentle push-in.
+        const double story_progress = map_place.empty()
+            ? std::clamp((linear_progress - 0.08) / 0.30, 0.0, 1.0)
+            : 1.0;
         const auto compose_start = std::chrono::steady_clock::now();
         cv::Mat frame;
         if (self_contained_map) {
@@ -724,7 +903,9 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             cv::bitwise_not(editorial_gray, editorial_gray);
             cv::cvtColor(editorial_gray, editorial_frame, cv::COLOR_GRAY2BGR);
             editorial_frame.convertTo(editorial_frame, -1, 0.82, 62.0);
-            const double transition = std::clamp((linear_progress - 0.06) / 0.30, 0.0, 1.0);
+            const double transition = map_place.empty()
+                ? std::clamp((linear_progress - 0.06) / 0.30, 0.0, 1.0)
+                : 1.0;
             cv::addWeighted(satellite_frame, 1.0 - transition * 0.48,
                             editorial_frame, transition * 0.48, 0.0, frame);
         } else {
@@ -742,7 +923,8 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 frame_zooms[static_cast<std::size_t>(f - 1)]);
         }
         const auto effect_start = std::chrono::steady_clock::now();
-        if (map_animation == "route_line" || map_animation == "multi_leg_flight") {
+        if ((map_animation == "route_line" || map_animation == "multi_leg_flight") &&
+            pins.size() >= 2) {
             std::vector<MapRouteStop> stops;
             stops.reserve(pins.size());
             for (const Pin& pin : pins) {
@@ -779,7 +961,9 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             const double metres_per_pixel = 156543.03392 *
                 std::cos(latitude * 3.14159265358979323846 / 180.0) /
                 std::pow(2.0, zoom);
-            const double radius_pixels = payload.value("area_glow_radius_km", 0.0) *
+            const double radius_km = payload.value("area_glow_radius_km",
+                map_place.empty() ? 0.0 : 100.0);
+            const double radius_pixels = radius_km *
                 1000.0 / std::max(1e-9, metres_per_pixel);
             const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
                 anchor, zoom, request.output_width, request.output_height);
@@ -794,7 +978,8 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 story_progress, pins.front().text);
         } else if (map_animation == "territory_flood_fill") {
             draw_territory_flood_fill(frame, territory_polygons, anchor, zoom,
-                story_progress, pins.front().text);
+                story_progress, show_text && payload.value("show_location_tag", true)
+                    ? pins.front().text : "");
         } else if (map_animation == "territory_tactical_fill") {
             draw_tactical_territory(frame, territory_polygons, anchor, zoom,
                 story_progress, pins.front().text,
@@ -802,19 +987,19 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 profiling ? &tactical_timings : nullptr);
         } else if (map_animation == "volumetric_laser_scan") {
             draw_volumetric_laser_scan(frame, territory_polygons, anchor, zoom,
-                story_progress, pins.front().text);
+                story_progress, pins.front().text, show_text);
         } else if (map_animation == "vector_particle_flow") {
             draw_vector_particle_flow(frame, territory_polygons, anchor, zoom,
-                story_progress, pins.front().text);
+                story_progress, pins.front().text, show_text);
         } else if (map_animation == "dark_mirror_diorama") {
             draw_dark_mirror_diorama(frame, territory_polygons, anchor, zoom,
-                story_progress, pins.front().text);
+                story_progress, pins.front().text, show_text);
         } else if (map_animation == "voronoi_heat_contours") {
             draw_voronoi_heat_contours(frame, territory_polygons, anchor, zoom,
-                story_progress, pins.front().text);
+                story_progress, pins.front().text, show_text);
         } else if (map_animation == "holographic_postfx") {
             draw_holographic_postfx(frame, territory_polygons, anchor, zoom,
-                story_progress, pins.front().text);
+                story_progress, pins.front().text, show_text);
         } else if (map_animation == "light_beam_drop") {
             const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
                 anchor, zoom, request.output_width, request.output_height);
@@ -840,26 +1025,30 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             draw_location_callout(frame, {x, y}, pins.front().text,
                 std::clamp((linear_progress - 0.18) * 4.0, 0.0, 1.0));
         } else if (map_animation == "mountain_ridge_callout") {
-            draw_mountain_ridge_callout(frame, mountain_overlay, story_progress,
-                                        pins.front().text);
+            if (!mountain_overlay.empty()) {
+                draw_mountain_ridge_callout(frame, mountain_overlay, story_progress,
+                                            pins.front().text, show_text);
+            }
         } else if (map_animation == "continental_atlas") {
             std::vector<cv::Point> label_points;
             std::vector<std::string> labels;
-            for (const Pin& pin : pins) {
-                const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
-                    request.output_width, request.output_height);
-                label_points.emplace_back(x, y);
-                labels.push_back(pin.text);
+            if (show_text) {
+                for (const Pin& pin : pins) {
+                    const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
+                        request.output_width, request.output_height);
+                    label_points.emplace_back(x, y);
+                    labels.push_back(pin.text);
+                }
             }
             draw_continental_atlas(frame, country_features, anchor, zoom,
-                story_progress, payload.at("country_feature").get<std::string>(),
+                story_progress, payload.value("country_feature", map_place),
                 label_points, labels);
         } else if (map_animation == "historic_location_timeline") {
             const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
                 anchor, zoom, request.output_width, request.output_height);
             draw_historic_location_timeline(frame, territory_polygons, anchor, zoom,
                 story_progress, {x, y}, pins.front().text,
-                payload.at("timeline_label").get<std::string>());
+                show_text ? payload.value("timeline_label", "") : "", show_text);
         } else {
             for (const Pin& pin : pins) {
                 const auto [x, y] = geo_to_screen(pin.lat, pin.lon, anchor, zoom,
@@ -869,6 +1058,26 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                                                   static_cast<double>(y)},
                                           pin.text, {255, 255, 255});
             }
+        }
+        const bool animation_fills_place =
+            map_animation == "territory_glow_reveal" ||
+            map_animation == "satellite_scan_reveal" ||
+            map_animation == "territory_flood_fill" ||
+            map_animation == "territory_tactical_fill" ||
+            map_animation == "territory_extrusion" ||
+            map_animation == "volumetric_laser_scan" ||
+            map_animation == "vector_particle_flow" ||
+            map_animation == "dark_mirror_diorama" ||
+            map_animation == "voronoi_heat_contours" ||
+            map_animation == "holographic_postfx" ||
+            map_animation == "continental_atlas";
+        if (!map_place.empty() && !animation_fills_place) {
+            const double place_fill_progress = std::clamp(
+                linear_progress / 0.24, 0.0, 1.0);
+            const double eased_fill = place_fill_progress * place_fill_progress *
+                                      (3.0 - 2.0 * place_fill_progress);
+            draw_named_place_fill(frame, named_place_polygons, anchor, zoom,
+                                  eased_fill);
         }
         if (self_contained_map) {
             effect_wall += seconds_since(effect_start);
@@ -997,6 +1206,7 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         telemetry.plates.prefetch_tiles_memory_hits = 0;
     } else {
         telemetry.tile.disk_cache_hits = satellite ? satellite->disk_hits() : raster->tile_cache_hits();
+        telemetry.tile.persistent_cache_hits = satellite ? 0 : raster->tile_disk_hits();
         telemetry.tile.disk_cache_misses = satellite ? satellite->network_fetches() : raster->tile_cache_misses();
         telemetry.tile.network_fetches = satellite ? satellite->network_fetches() : 0;
         telemetry.tile.bytes_downloaded = satellite ? satellite->bytes_downloaded() : 0;

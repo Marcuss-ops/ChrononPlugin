@@ -62,6 +62,9 @@
 #ifndef CHRONON_MAPS_FONTS_DIR_DEFAULT
 #define CHRONON_MAPS_FONTS_DIR_DEFAULT "../Chronon3d/assets/fonts"
 #endif
+#ifndef CHRONON_MAPS_FONTS_DIR_SOURCE
+#define CHRONON_MAPS_FONTS_DIR_SOURCE "../Chronon3d/assets/fonts"
+#endif
 
 namespace {
 
@@ -417,9 +420,11 @@ void stroke_feature(cv::Mat& frame, const GeoFeature& feature, const View& view,
 struct Geometry {
     GeoFeatureCollection states;
     GeoFeatureCollection countries;
-    const GeoFeature* indiana = nullptr;
+    const GeoFeature* highlighted = nullptr;
+    bool country_mode = false;
     LonLatBox lower48;
-    LonLatBox indiana_box;
+    LonLatBox target_box;
+    LonLatBox country_view_box;
 };
 
 [[nodiscard]] GeoFeatureCollection load_geojson(const fs::path& path) {
@@ -446,7 +451,8 @@ struct Geometry {
 
 [[nodiscard]] Geometry load_geometry(const fs::path& states_path,
                                      const fs::path& countries_path,
-                                     const std::string& highlight_state) {
+                                     const std::string& highlight_state,
+                                     const std::string& highlight_country) {
     Geometry geometry;
     geometry.states = load_geojson(states_path);
     try {
@@ -454,16 +460,39 @@ struct Geometry {
     } catch (const std::exception& exc) {
         std::cerr << "[map-style] country context unavailable: " << exc.what() << "\n";
     }
-    const std::string highlight = highlight_state.empty() ? "IN" : highlight_state;
-    geometry.indiana = find_feature(geometry.states, "postal", highlight);
-    if (geometry.indiana == nullptr) {
-        geometry.indiana = find_feature(geometry.states, "name", highlight);
+    if (!highlight_country.empty()) {
+        geometry.highlighted = find_feature(geometry.countries, "ADMIN",
+                                            highlight_country);
+        if (geometry.highlighted == nullptr) {
+            geometry.highlighted = find_feature(geometry.countries, "NAME",
+                                                highlight_country);
+        }
+        if (geometry.highlighted == nullptr) {
+            throw std::runtime_error("highlight country not found in the country catalog: " +
+                                     highlight_country);
+        }
+        geometry.country_mode = true;
+        geometry.target_box = box_of(*geometry.highlighted);
+        const double lon_pad = std::max(4.0,
+            (geometry.target_box.lon_max - geometry.target_box.lon_min) * 0.40);
+        const double lat_pad = std::max(3.0,
+            (geometry.target_box.lat_max - geometry.target_box.lat_min) * 0.30);
+        geometry.country_view_box.add(geometry.target_box.lon_min - lon_pad,
+                                      geometry.target_box.lat_min - lat_pad);
+        geometry.country_view_box.add(geometry.target_box.lon_max + lon_pad,
+                                      geometry.target_box.lat_max + lat_pad);
+        return geometry;
     }
-    if (geometry.indiana == nullptr) {
+    const std::string highlight = highlight_state.empty() ? "IN" : highlight_state;
+    geometry.highlighted = find_feature(geometry.states, "postal", highlight);
+    if (geometry.highlighted == nullptr) {
+        geometry.highlighted = find_feature(geometry.states, "name", highlight);
+    }
+    if (geometry.highlighted == nullptr) {
         throw std::runtime_error("highlight state not found in the state catalog: " +
                                  highlight);
     }
-    geometry.indiana_box = box_of(*geometry.indiana);
+    geometry.target_box = box_of(*geometry.highlighted);
     for (const GeoFeature& feature : geometry.states.features) {
         if (!is_contiguous_state(feature)) continue;
         const LonLatBox box = box_of(feature);
@@ -621,6 +650,19 @@ void draw_states(cv::Mat& frame, const GeoFeatureCollection& states, const View&
     }
 }
 
+void draw_region_context(cv::Mat& frame, const Geometry& geometry,
+                         const View& view, const cv::Scalar& fill,
+                         const cv::Scalar& border, int thickness,
+                         const cv::Scalar& water, bool outline_only = false) {
+    if (geometry.country_mode) {
+        draw_country_context(frame, geometry.countries, view, fill, border,
+                             thickness, water);
+    } else {
+        draw_states(frame, geometry.states, view, fill, border, thickness,
+                    water, outline_only);
+    }
+}
+
 void draw_graticule(cv::Mat& frame, const View& view, const cv::Scalar& color,
                     int thickness, double step, bool crosses) {
     for (double lon = -180.0; lon <= 180.0; lon += step) {
@@ -736,30 +778,36 @@ struct Plates {
 
 [[nodiscard]] View style_view(const std::string& slug, const Geometry& geometry,
                               int width, int height) {
+    const LonLatBox& context_box = geometry.country_mode
+        ? geometry.country_view_box : geometry.lower48;
     if (slug == "01_editorial_vox") {
-        return fit_box(geometry.lower48,
+        return fit_box(context_box,
                        fraction_rect(width, height, 0.035, 0.055, 0.93, 0.815));
     }
     if (slug == "02_paper_cutout") {
-        return fit_box(geometry.lower48,
+        return fit_box(context_box,
                        fraction_rect(width, height, 0.05, 0.15, 0.90, 0.78));
     }
     if (slug == "03_dark_radar") {
-        return fit_box(geometry.lower48,
+        return fit_box(context_box,
                        fraction_rect(width, height, 0.03, 0.07, 0.94, 0.84));
     }
     if (slug == "04_blueprint") {
-        return fit_box(geometry.lower48,
+        return fit_box(context_box,
                        fraction_rect(width, height, 0.05, 0.08, 0.90, 0.70));
     }
     if (slug == "05_connection_arc") {
+        if (geometry.country_mode) {
+            return fit_box(geometry.country_view_box,
+                           fraction_rect(width, height, 0.03, 0.02, 0.94, 0.96));
+        }
         LonLatBox box;
         box.add(-90.4, 36.6);
         box.add(-73.8, 43.0);
         return fit_box(box, fraction_rect(width, height, 0.03, 0.02, 0.94, 0.96));
     }
     if (slug == "06_floating_island") {
-        return fit_box(geometry.indiana_box,
+        return fit_box(geometry.target_box,
                        fraction_rect(width, height, 0.22, 0.15, 0.38, 0.68));
     }
     throw std::runtime_error("unknown map style: " + slug);
@@ -779,13 +827,15 @@ struct Plates {
         const cv::Scalar sea = rgb(0xCBD5E1);
         plates.base = textured_canvas(plate_width, plate_height, 0xCBD5E1, 0xE011,
                                       0.055, 0.022);
-        draw_country_context(plates.base, geometry.countries, plate,
-                             rgb(0xE9E4D8), rgb(0xC9C0B2), border, sea);
-        draw_states(plates.base, geometry.states, plate, rgb(0xF4F1EA),
-                    rgb(0xB8B2A6), border, sea);
+        if (!geometry.country_mode) {
+            draw_country_context(plates.base, geometry.countries, plate,
+                                 rgb(0xE9E4D8), rgb(0xC9C0B2), border, sea);
+        }
+        draw_region_context(plates.base, geometry, plate, rgb(0xF4F1EA),
+                            rgb(0xB8B2A6), border, sea);
         plates.hi = plates.base.clone();
-        fill_feature(plates.hi, *geometry.indiana, plate, rgb(0xD94E34), sea);
-        stroke_feature(plates.hi, *geometry.indiana, plate, rgb(0xB33A25),
+        fill_feature(plates.hi, *geometry.highlighted, plate, rgb(0xD94E34), sea);
+        stroke_feature(plates.hi, *geometry.highlighted, plate, rgb(0xB33A25),
                        border + 1);
         return finalize_plates(plates.base, plates.hi, width, height);
     }
@@ -793,10 +843,10 @@ struct Plates {
     if (slug == "02_paper_cutout") {
         plates.base = textured_canvas(plate_width, plate_height, 0xE3DED3, 0xE022,
                                       0.065, 0.028);
-        draw_states(plates.base, geometry.states, plate, rgb(0xD8D0C1),
-                    rgb(0xB8AD9B), border, rgb(0xE3DED3));
+        draw_region_context(plates.base, geometry, plate, rgb(0xD8D0C1),
+                            rgb(0xB8AD9B), border, rgb(0xE3DED3));
         plates.hi = plates.base.clone();
-        const auto rings = scaled_rings(project_rings(*geometry.indiana, plate),
+        const auto rings = scaled_rings(project_rings(*geometry.highlighted, plate),
                                         1.035, {-8.0 * pfx, -8.0 * pfx});
         cv::Mat shadow_mask(plates.hi.size(), CV_8UC1, cv::Scalar(0));
         fill_rings(shadow_mask, offset_rings(rings, {18.0 * pfx, 26.0 * pfx}),
@@ -815,8 +865,13 @@ struct Plates {
                                       0.045, 0.012);
         draw_graticule(plates.base, plate, rgb(0x1B2636), std::max(1, border / 2),
                        5.0, true);
-        draw_states(plates.base, geometry.states, plate, rgb(0x131A26),
-                    rgb(0x2D3B55), border, rgb(0x0B0F17));
+        draw_region_context(plates.base, geometry, plate, rgb(0x131A26),
+                            rgb(0x2D3B55), border, rgb(0x0B0F17));
+        plates.hi = plates.base.clone();
+        fill_feature(plates.hi, *geometry.highlighted, plate, rgb(0x1E3A5F),
+                     rgb(0x0B0F17));
+        stroke_feature(plates.hi, *geometry.highlighted, plate, rgb(0x38BDF8),
+                       border + 1);
         return finalize_plates(plates.base, plates.hi, width, height);
     }
 
@@ -829,14 +884,14 @@ struct Plates {
         cv::rectangle(plates.base, {inset, inset, plate_width - inset * 2,
                                     plate_height - inset * 2},
                       rgb(0x3D6C93), border, cv::LINE_AA);
-        draw_states(plates.base, geometry.states, plate, rgb(0x0E2A47),
-                    rgb(0x8FB8DA), border, rgb(0x0E2A47), true);
+        draw_region_context(plates.base, geometry, plate, rgb(0x0E2A47),
+                            rgb(0x8FB8DA), border, rgb(0x0E2A47), true);
         plates.hi = plates.base.clone();
-        draw_hatch(plates.hi, *geometry.indiana, plate, rgb(0xE3C68E),
+        draw_hatch(plates.hi, *geometry.highlighted, plate, rgb(0xE3C68E),
                    std::max(6, static_cast<int>(std::lround(7.0 * pfx))), border);
-        stroke_feature(plates.hi, *geometry.indiana, plate, rgb(0x061726),
+        stroke_feature(plates.hi, *geometry.highlighted, plate, rgb(0x061726),
                        border * 4);
-        stroke_feature(plates.hi, *geometry.indiana, plate, rgb(0xDCEBF8),
+        stroke_feature(plates.hi, *geometry.highlighted, plate, rgb(0xDCEBF8),
                        std::max(2, border * 2));
         return finalize_plates(plates.base, plates.hi, width, height);
     }
@@ -845,10 +900,17 @@ struct Plates {
         const cv::Scalar water = rgb(0xC7D5DE);
         plates.base = textured_canvas(plate_width, plate_height, 0xC7D5DE, 0xE055,
                                       0.055, 0.022);
-        draw_country_context(plates.base, geometry.countries, plate,
-                             rgb(0xDED7C9), rgb(0xC3B9A8), border, water);
-        draw_states(plates.base, geometry.states, plate, rgb(0xE7E1D4),
-                    rgb(0xB7AE9E), border, water);
+        if (!geometry.country_mode) {
+            draw_country_context(plates.base, geometry.countries, plate,
+                                 rgb(0xDED7C9), rgb(0xC3B9A8), border, water);
+        }
+        draw_region_context(plates.base, geometry, plate, rgb(0xE7E1D4),
+                            rgb(0xB7AE9E), border, water);
+        plates.hi = plates.base.clone();
+        fill_feature(plates.hi, *geometry.highlighted, plate, rgb(0xD94E34),
+                     water);
+        stroke_feature(plates.hi, *geometry.highlighted, plate, rgb(0xA43A28),
+                       border + 1);
         return finalize_plates(plates.base, plates.hi, width, height);
     }
 
@@ -856,7 +918,7 @@ struct Plates {
         plates.base = textured_canvas(plate_width, plate_height, 0xEDE8DE, 0xE066,
                                       0.055, 0.026);
         plates.hi = plates.base.clone();
-        const auto rings = project_rings(*geometry.indiana, plate);
+        const auto rings = project_rings(*geometry.highlighted, plate);
         cv::Mat shadow_mask(plates.hi.size(), CV_8UC1, cv::Scalar(0));
         fill_rings(shadow_mask, offset_rings(rings, {18.0 * pfx, 28.0 * pfx}),
                    cv::Scalar(255));
@@ -1111,7 +1173,9 @@ void overlay_editorial(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
     const double pin_alpha = smooth01(0.10, 0.15, t);
     const double city_alpha = smooth01(0.15, 0.21, t);
 
-    const std::string micro = upper_copy("United States / editorial plate");
+    const std::string micro = upper_copy(geometry.country_mode
+        ? config.title + " / editorial plate"
+        : "United States / editorial plate");
     const double micro_width = fonts.mono.measure(micro, 17, 3);
     draw_text(fonts.mono, frame, micro,
               static_cast<int>(std::lround(1820.0 - micro_width)), 1018, 17,
@@ -1138,25 +1202,34 @@ void overlay_editorial(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
 }
 
 void overlay_paper_cutout(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
-                          const View& screen, double t) {
-    const cv::Point2d indianapolis = screen.project(39.7684, -86.1581);
+                          const View& screen, double t,
+                          const chrononplugin::maps::EditorialMapRequest& config) {
+    const double pin_latitude = geometry.country_mode
+        ? config.pin_latitude : 39.7684;
+    const double pin_longitude = geometry.country_mode
+        ? config.pin_longitude : -86.1581;
+    const std::string title = geometry.country_mode ? config.title : "INDIANA";
+    const std::string pin_label = geometry.country_mode
+        ? config.pin_label : "Indianapolis";
+    const cv::Point2d indianapolis = screen.project(pin_latitude, pin_longitude);
     const double title_alpha = smooth01(0.02, 0.09, t);
     const double pin_alpha = smooth01(0.12, 0.18, t);
     const double city_alpha = smooth01(0.17, 0.23, t);
 
-    draw_text(fonts.serif, frame, "INDIANA", 100, 148, 92, rgb(0x2A241C),
+    draw_text(fonts.serif, frame, title, 100, 148, 92, rgb(0x2A241C),
               title_alpha);
     draw_line_alpha(frame, {104, 168}, {190, 168}, rgb(0xC05A3E), 3,
                     title_alpha);
-    draw_text(fonts.mono, frame, "39.77 N / 86.16 W", 104, 204, 18,
+    draw_text(fonts.mono, frame, geometry.country_mode ? "ITALY / EUROPE" : "39.77 N / 86.16 W", 104, 204, 18,
               rgb(0x6B6255), title_alpha * 0.9, 2);
-    draw_text(fonts.sans, frame, upper_copy("The Hoosier State"), 104, 232, 18,
+    draw_text(fonts.sans, frame, upper_copy(geometry.country_mode
+                  ? config.subtitle : "The Hoosier State"), 104, 232, 18,
               rgb(0x7A7164), title_alpha * 0.85, 4);
 
     draw_pin(frame, indianapolis, pin_alpha, rgb(0x2A241C), rgb(0xF8F3E7), 1.0,
              13.0);
     if (city_alpha > 0.0) {
-        draw_text_outlined(fonts.sans_bold, frame, "Indianapolis",
+        draw_text_outlined(fonts.sans_bold, frame, pin_label,
                            static_cast<int>(std::lround(indianapolis.x)) + 26,
                            static_cast<int>(std::lround(indianapolis.y)) - 12,
                            31, rgb(0x2A241C), city_alpha, 0, rgb(0xF8F3E7), 2);
@@ -1165,32 +1238,46 @@ void overlay_paper_cutout(cv::Mat& frame, const Geometry& geometry, Fonts& fonts
 }
 
 void overlay_dark_radar(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
-                        const View& screen, double t) {
-    const cv::Point2d washington = screen.project(38.9072, -77.0369);
+                        const View& screen, double t,
+                        const chrononplugin::maps::EditorialMapRequest& config) {
+    const double pin_latitude = geometry.country_mode
+        ? config.pin_latitude : 38.9072;
+    const double pin_longitude = geometry.country_mode
+        ? config.pin_longitude : -77.0369;
+    const std::string pin_label = geometry.country_mode
+        ? config.pin_label : "WASHINGTON, D.C.";
+    const cv::Point2d washington = screen.project(pin_latitude, pin_longitude);
     const double hud_alpha = smooth01(0.02, 0.08, t);
     const double pin_alpha = smooth01(0.05, 0.10, t);
     const double label_alpha = smooth01(0.09, 0.15, t);
 
     draw_line_alpha(frame, {92, 92}, {172, 92}, rgb(0x38BDF8), 3,
                     hud_alpha * 0.9);
-    draw_text(fonts.mono, frame, "UNITED STATES // SIGNAL GRID", 92, 130, 20,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "ITALIA // SIGNAL GRID" : "UNITED STATES // SIGNAL GRID", 92, 130, 20,
               rgb(0x8FA3BF), hud_alpha, 3);
-    draw_text(fonts.mono, frame, "38.90 N / 77.03 W", 92, 158, 16,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "42.00 N / 12.50 E" : "38.90 N / 77.03 W", 92, 158, 16,
               rgb(0x5E738D), hud_alpha * 0.9, 2);
 
     draw_radar(frame, washington, t, pin_alpha);
-    draw_text(fonts.mono, frame, "WASHINGTON, D.C.", 92, 976, 24,
+    draw_text(fonts.mono, frame, pin_label, 92, 976, 24,
               rgb(0xF1F5F9), label_alpha, 4);
-    draw_text(fonts.mono, frame, "FEDERAL DISTRICT / PRIORITY 01", 92, 1006, 16,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "COUNTRY OUTLINE / PRIORITY 01" : "FEDERAL DISTRICT / PRIORITY 01", 92, 1006, 16,
               rgb(0x6F849E), label_alpha * 0.9, 2);
-    draw_text(fonts.mono, frame, "GRID REF 18S UJ 234 083", 92, 1032, 14,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "GRID REF ITALIA / CENTRALE" : "GRID REF 18S UJ 234 083", 92, 1032, 14,
               rgb(0x475B72), label_alpha * 0.8, 2);
     (void)geometry;
 }
 
 void overlay_blueprint(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
-                       const View& screen, double t, int width, int height) {
-    const cv::Point2d indianapolis = screen.project(39.7684, -86.1581);
+                       const View& screen, double t, int width, int height,
+                       const chrononplugin::maps::EditorialMapRequest& config) {
+    const cv::Point2d indianapolis = screen.project(
+        geometry.country_mode ? config.pin_latitude : 39.7684,
+        geometry.country_mode ? config.pin_longitude : -86.1581);
     const double panel_alpha = smooth01(0.03, 0.09, t);
     const double label_alpha = smooth01(0.12, 0.18, t);
     const cv::Rect panel(static_cast<int>(std::lround(width * 0.04)),
@@ -1201,12 +1288,15 @@ void overlay_blueprint(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
                     panel_alpha * 0.94);
 
     const int text_x = panel.x + static_cast<int>(std::lround(width * 0.016));
-    draw_text(fonts.sans_bold, frame, "INDIANA", text_x, panel.y + 62, 56,
+    draw_text(fonts.sans_bold, frame,
+              geometry.country_mode ? config.title : "INDIANA",
+              text_x, panel.y + 62, 56,
               rgb(0xE8F3FC), panel_alpha, 9);
     draw_line_alpha(frame, {text_x, panel.y + 80},
                     {panel.x + panel.width - 26, panel.y + 80},
                     rgb(0x3D6C93), 1, panel_alpha);
-    draw_text(fonts.mono, frame, "39.7684 N / 86.1581 W", text_x,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "ITALY / EUROPE" : "39.7684 N / 86.1581 W", text_x,
               panel.y + 112, 18, rgb(0xA8C8E8), panel_alpha * 0.95, 1);
     draw_text(fonts.mono, frame, "ADMINISTRATIVE PLATE / 1:2,000,000", text_x,
               panel.y + 140, 15, rgb(0x7FA5C6), panel_alpha * 0.9, 1);
@@ -1227,7 +1317,8 @@ void overlay_blueprint(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
                    {static_cast<int>(std::lround(indianapolis.x)),
                     static_cast<int>(std::lround(indianapolis.y))},
                    rgb(0xE3C68E), label_alpha, 12);
-    draw_text(fonts.mono, frame, "INDIANAPOLIS",
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? config.pin_label : "INDIANAPOLIS",
               static_cast<int>(std::lround(indianapolis.x)) + 30,
               static_cast<int>(std::lround(indianapolis.y)) - 14, 17,
               rgb(0xE3C68E), label_alpha, 2);
@@ -1235,18 +1326,25 @@ void overlay_blueprint(cv::Mat& frame, const Geometry& geometry, Fonts& fonts,
 }
 
 void overlay_connection_arc(cv::Mat& frame, const Geometry& geometry,
-                            Fonts& fonts, const View& screen, double t) {
-    const cv::Point2d washington = screen.project(38.9072, -77.0369);
-    const cv::Point2d indianapolis = screen.project(39.7684, -86.1581);
+                            Fonts& fonts, const View& screen, double t,
+                            const chrononplugin::maps::EditorialMapRequest& config) {
+    const cv::Point2d washington = geometry.country_mode
+        ? screen.project(45.4642, 9.19) : screen.project(38.9072, -77.0369);
+    const cv::Point2d indianapolis = screen.project(
+        geometry.country_mode ? config.pin_latitude : 39.7684,
+        geometry.country_mode ? config.pin_longitude : -86.1581);
     const double title_alpha = smooth01(0.02, 0.08, t);
     const double source_alpha = smooth01(0.06, 0.11, t);
     const double arc_progress = smooth01(0.10, 0.42, t);
     const double destination_alpha = smooth01(0.36, 0.43, t);
     const double distance_alpha = smooth01(0.34, 0.42, t);
 
-    draw_text(fonts.serif, frame, "WASHINGTON - INDIANAPOLIS", 98, 112, 46,
+    draw_text(fonts.serif, frame, geometry.country_mode
+                  ? "MILANO - ROMA" : "WASHINGTON - INDIANAPOLIS", 98, 112, 46,
               rgb(0x1F2937), title_alpha);
-    draw_text(fonts.mono, frame, "CONNECTION ARC / APPROX. 800 KM", 100, 146,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "CONNECTION ARC / APPROX. 480 KM"
+                  : "CONNECTION ARC / APPROX. 800 KM", 100, 146,
               17, rgb(0x5B6470), title_alpha * 0.9, 2);
 
     draw_ground_shadow(frame, washington, indianapolis,
@@ -1267,14 +1365,15 @@ void overlay_connection_arc(cv::Mat& frame, const Geometry& geometry,
     draw_pin(frame, indianapolis, destination_alpha, rgb(0xD94E34),
              rgb(0xF8F3E7), 1.05, 14.0);
 
-    const std::string dc_label = "WASHINGTON, D.C.";
+    const std::string dc_label = geometry.country_mode ? "MILANO" : "WASHINGTON, D.C.";
     const double dc_width = fonts.sans_bold.measure(dc_label, 27);
     draw_text_outlined(
         fonts.sans_bold, frame, dc_label,
         static_cast<int>(std::lround(washington.x - dc_width - 24)),
         static_cast<int>(std::lround(washington.y)) + 42, 27, rgb(0x1F2937),
         destination_alpha, 0, rgb(0xF8F3E7), 2);
-    const std::string indy_label = "INDIANAPOLIS";
+    const std::string indy_label = geometry.country_mode
+        ? config.pin_label : "INDIANAPOLIS";
     const double indy_width = fonts.sans_bold.measure(indy_label, 27);
     draw_text_outlined(
         fonts.sans_bold, frame, indy_label,
@@ -1284,7 +1383,8 @@ void overlay_connection_arc(cv::Mat& frame, const Geometry& geometry,
 
     if (distance_alpha > 0.0) {
         const cv::Point2d midpoint = curve[curve.size() / 2];
-        draw_text_centered(fonts.mono, frame, "800 KM",
+        draw_text_centered(fonts.mono, frame,
+                           geometry.country_mode ? "480 KM" : "800 KM",
                            static_cast<int>(std::lround(midpoint.x)),
                            static_cast<int>(std::lround(midpoint.y)) - 20, 19,
                            rgb(0x5B6470), distance_alpha, 2);
@@ -1293,8 +1393,11 @@ void overlay_connection_arc(cv::Mat& frame, const Geometry& geometry,
 }
 
 void overlay_floating_island(cv::Mat& frame, const Geometry& geometry,
-                             Fonts& fonts, const View& screen, double t) {
-    const cv::Point2d anchor = screen.project(40.20, -84.82);
+                             Fonts& fonts, const View& screen, double t,
+                             const chrononplugin::maps::EditorialMapRequest& config) {
+    const cv::Point2d anchor = geometry.country_mode
+        ? screen.project(config.pin_latitude, config.pin_longitude)
+        : screen.project(40.20, -84.82);
     const double line_progress = smooth01(0.10, 0.22, t);
     const double text_alpha = smooth01(0.20, 0.27, t);
     const int rise = static_cast<int>(std::lround((1.0 - text_alpha) * 10.0));
@@ -1318,14 +1421,17 @@ void overlay_floating_island(cv::Mat& frame, const Geometry& geometry,
     draw_line_alpha(frame, {cartouche_x - 22, cartouche_top + 54},
                     {cartouche_x - 22, cartouche_top + 10},
                     rgb(0xD94E34), 4, text_alpha);
-    draw_text(fonts.serif, frame, "INDIANA", cartouche_x,
+    draw_text(fonts.serif, frame, geometry.country_mode
+                  ? config.title : "INDIANA", cartouche_x,
               cartouche_top + 70 + rise, 74, rgb(0x1F2937), text_alpha);
     draw_line_alpha(frame, {cartouche_x, cartouche_top + 88 + rise},
                     {cartouche_x + 340, cartouche_top + 88 + rise},
                     rgb(0xB8B2A6), 1, text_alpha);
-    draw_text(fonts.mono, frame, "39.77 N / 86.15 W", cartouche_x,
+    draw_text(fonts.mono, frame, geometry.country_mode
+                  ? "ITALIA / EUROPA" : "39.77 N / 86.15 W", cartouche_x,
               cartouche_top + 120 + rise, 19, rgb(0x5B6470), text_alpha, 2);
-    draw_text(fonts.sans, frame, upper_copy("The Hoosier State"), cartouche_x,
+    draw_text(fonts.sans, frame, upper_copy(geometry.country_mode
+                  ? config.subtitle : "The Hoosier State"), cartouche_x,
               cartouche_top + 148 + rise, 17, rgb(0x6B7280),
               text_alpha * 0.9, 4);
     (void)geometry;
@@ -1338,15 +1444,16 @@ void draw_overlay(const std::string& slug, cv::Mat& frame,
     if (slug == "01_editorial_vox") {
         overlay_editorial(frame, geometry, fonts, screen, t, config);
     } else if (slug == "02_paper_cutout") {
-        overlay_paper_cutout(frame, geometry, fonts, screen, t);
+        overlay_paper_cutout(frame, geometry, fonts, screen, t, config);
     } else if (slug == "03_dark_radar") {
-        overlay_dark_radar(frame, geometry, fonts, screen, t);
+        overlay_dark_radar(frame, geometry, fonts, screen, t, config);
     } else if (slug == "04_blueprint") {
-        overlay_blueprint(frame, geometry, fonts, screen, t, width, height);
+        overlay_blueprint(frame, geometry, fonts, screen, t, width, height,
+                          config);
     } else if (slug == "05_connection_arc") {
-        overlay_connection_arc(frame, geometry, fonts, screen, t);
+        overlay_connection_arc(frame, geometry, fonts, screen, t, config);
     } else if (slug == "06_floating_island") {
-        overlay_floating_island(frame, geometry, fonts, screen, t);
+        overlay_floating_island(frame, geometry, fonts, screen, t, config);
     }
 }
 
@@ -1430,12 +1537,17 @@ EditorialMapResult render_editorial_map(const EditorialMapRequest& request) {
         const char* env_fonts = std::getenv("CHRONON_MAPS_FONTS_DIR");
         fonts_dir = env_fonts != nullptr && *env_fonts != '\0'
             ? env_fonts : CHRONON_MAPS_FONTS_DIR_DEFAULT;
+        if (!fs::is_directory(fonts_dir) &&
+            (env_fonts == nullptr || *env_fonts == '\0')) {
+            fonts_dir = CHRONON_MAPS_FONTS_DIR_SOURCE;
+        }
     }
 
     try {
         const auto started = std::chrono::steady_clock::now();
         const Geometry geometry =
-            load_geometry(states_path, countries_path, request.highlight_state);
+            load_geometry(states_path, countries_path, request.highlight_state,
+                          request.highlight_country);
         const fs::path fonts_path(fonts_dir);
         {
             // Fail before opening the encoder if the font set is incomplete.
@@ -1480,13 +1592,17 @@ EditorialMapResult render_editorial_map(const EditorialMapRequest& request) {
                 ? std::to_string(request.fps_num) + "/" +
                       std::to_string(request.fps_den)
                 : std::to_string(request.fps);
+        const std::string encoder_args = request.gpu_encoder
+            ? " -c:v h264_nvenc -gpu " + std::to_string(request.gpu_index) +
+                  " -preset p6 -tune hq -rc vbr -cq " +
+                  std::to_string(request.gpu_quality) + " -b:v 0"
+            : " -c:v libx264 -preset veryfast -crf " +
+                  std::to_string(request.crf);
         const std::string command =
             ffmpeg + " -hide_banner -loglevel error -y -f rawvideo -pix_fmt bgr24 -s " +
             std::to_string(request.output_width) + "x" +
             std::to_string(request.output_height) + " -r " + rate +
-            " -i - -c:v libx264 -preset veryfast -crf " +
-            std::to_string(request.crf) +
-            " -pix_fmt yuv420p -movflags +faststart " +
+            " -i -" + encoder_args + " -pix_fmt yuv420p -movflags +faststart " +
             shell_quote(video_path.string());
 
         std::FILE* encoder = ::popen(command.c_str(), "w");
@@ -1505,13 +1621,8 @@ EditorialMapResult render_editorial_map(const EditorialMapRequest& request) {
             const double t = static_cast<double>(frame_index) /
                              static_cast<double>(request.frame_count - 1);
             const double zoom = 1.0 + style.zoom * t;
-            double highlight_alpha = 0.0;
-            if (style.slug == "01_editorial_vox" ||
-                style.slug == "02_paper_cutout" ||
-                style.slug == "04_blueprint" ||
-                style.slug == "06_floating_island") {
-                highlight_alpha = smooth01(0.015, 0.065, t);
-            }
+            const double highlight_alpha = plates.hi.empty()
+                ? 0.0 : smooth01(0.015, 0.090, t);
             cv::Mat frame = sample_plates(plates, zoom, highlight_alpha,
                                           request.output_width,
                                           request.output_height);

@@ -7,9 +7,13 @@
 
 #include <opencv2/core.hpp>
 
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <string>
+#include <system_error>
+#include <unistd.h>
 
 namespace {
 
@@ -106,6 +110,102 @@ int main() {
 
     // The raster carries rings for the zoom it was asked for.
     CHECK(raster.ring_count(5) > 0);
+
+    // ELIM-05 — persistent tile cache. A second render of the same area in a
+    // SEPARATE raster instance (cold memory cache) must be served from disk,
+    // pixel-identical, and a corrupt entry must fall back to rasterization.
+    {
+        namespace fs = std::filesystem;
+        const fs::path dir =
+            fs::temp_directory_path() /
+            ("chronon-map-tile-cache-" + std::to_string(static_cast<long long>(getpid())));
+        std::error_code ec;
+        fs::remove_all(dir, ec);
+
+        chrononplugin::maps::DiskCacheOptions disk;
+        disk.dir = dir.string();
+        disk.max_bytes = 8u * 1024u * 1024u;
+        disk.evict_every = 1;
+
+        const double cache_left = left + 7.0;
+        const double cache_top = top + 9.0;
+        cv::Mat written;
+        std::int64_t writes = 0;
+        double cold_ms = 0.0;
+        double warm_ms = 0.0;
+        {
+            VectorPlateRaster producer(VectorMapSources{kCountries, kItalyAdmin2}, disk);
+            const auto start = std::chrono::steady_clock::now();
+            written = producer.compose_plate(cache_left, cache_top, 512, 512, 5);
+            cold_ms = std::chrono::duration<double, std::milli>(
+                          std::chrono::steady_clock::now() - start)
+                          .count();
+            writes = producer.tile_disk_writes();
+            CHECK(writes > 0);
+            CHECK(producer.tile_disk_hits() == 0);
+        }
+
+        {
+            VectorPlateRaster consumer(VectorMapSources{kCountries, kItalyAdmin2}, disk);
+            const auto start = std::chrono::steady_clock::now();
+            const cv::Mat reused = consumer.compose_plate(cache_left, cache_top, 512, 512, 5);
+            warm_ms = std::chrono::duration<double, std::milli>(
+                          std::chrono::steady_clock::now() - start)
+                          .count();
+            CHECK(consumer.tile_disk_hits() == writes);
+            CHECK(same_pixels(reused, written));
+        }
+        std::printf("map_plate_raster: persistent cache cold=%.1f ms warm=%.1f ms "
+                    "(%lld tiles from disk)\n",
+                    cold_ms, warm_ms, static_cast<long long>(writes));
+
+        // Corrupt the first cached tile: it must be treated as a miss and the
+        // recomputed plate must still be pixel-identical.
+        std::string victim;
+        for (const auto& entry : fs::recursive_directory_iterator(dir, ec)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".tile") {
+                victim = entry.path().string();
+                break;
+            }
+        }
+        CHECK(!victim.empty());
+        if (!victim.empty()) {
+            std::FILE* f = std::fopen(victim.c_str(), "wb");
+            CHECK(f != nullptr);
+            if (f != nullptr) {
+                const char garbage[64] = {1, 2, 3};
+                std::fwrite(garbage, 1, sizeof(garbage), f);
+                std::fclose(f);
+            }
+            VectorPlateRaster repaired(VectorMapSources{kCountries, kItalyAdmin2}, disk);
+            const cv::Mat after_repair =
+                repaired.compose_plate(cache_left, cache_top, 512, 512, 5);
+            CHECK(same_pixels(after_repair, written));
+            CHECK(repaired.tile_disk_writes() > 0);
+        }
+
+        // Byte bound: with a 400 KiB budget a 512x512 plate (4+ tiles) must
+        // leave the directory at or under the budget after the sweep. A fresh
+        // directory is used on purpose: the sweep is driven by writes, so a
+        // cache that is only read cannot be re-bounded (documented behaviour).
+        const fs::path bounded_dir = dir.string() + "-bounded";
+        fs::remove_all(bounded_dir, ec);
+        chrononplugin::maps::DiskCacheOptions bounded = disk;
+        bounded.dir = bounded_dir.string();
+        bounded.max_bytes = 400u * 1024u;
+        {
+            VectorPlateRaster bounded_raster(VectorMapSources{kCountries, kItalyAdmin2}, bounded);
+            (void)bounded_raster.compose_plate(cache_left + 3.0, cache_top + 5.0, 512, 512, 5);
+        }
+        std::uint64_t total = 0;
+        for (const auto& entry : fs::recursive_directory_iterator(bounded_dir, ec)) {
+            if (entry.is_regular_file()) total += entry.file_size(ec);
+        }
+        CHECK(total <= bounded.max_bytes);
+
+        fs::remove_all(dir, ec);
+        fs::remove_all(bounded_dir, ec);
+    }
 
     if (g_failures != 0) {
         std::printf("%d check(s) failed\n", g_failures);

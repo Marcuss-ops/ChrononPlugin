@@ -46,7 +46,8 @@ bool DynamicMapTelemetry::validate(std::string& error) const {
     if (video_encoder.empty() || gpu_map_sampler.empty() || encoder_preset.empty()) {
         return reject("telemetry encoder and sampler fields are required");
     }
-    if (tile.rendered_locally < 0 || tile.network_fetches < 0 || tile.fallbacks < 0) {
+    if (tile.rendered_locally < 0 || tile.network_fetches < 0 || tile.fallbacks < 0 ||
+        tile.persistent_cache_hits < 0) {
         return reject("telemetry tile counters must be non-negative");
     }
     if (tile.rendered_locally > 0 && basemap != "chronon_editorial") {
@@ -93,9 +94,9 @@ bool DynamicMapTelemetry::emit(std::string& json, std::string& error) const {
         {"encoder_preset", encoder_preset},
         {"encoder_quality", encoder_quality},
         {"gate_ms", gate_ms},
-        {"tile",
-         {{"tile_disk_cache_hits", tile.disk_cache_hits},
-          {"tile_disk_cache_misses", tile.disk_cache_misses},
+        {"tile",	         {{"tile_disk_cache_hits", tile.disk_cache_hits},
+          {"tile_persistent_cache_hits", tile.persistent_cache_hits},
+	          {"tile_disk_cache_misses", tile.disk_cache_misses},
           {"tile_network_fetches", tile.network_fetches},
           {"tile_fallbacks", tile.fallbacks},
           {"tile_bytes_downloaded", tile.bytes_downloaded},

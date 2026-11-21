@@ -66,6 +66,46 @@ Older visual experiments remain under `archive/` as reference material. Their
 composition identifiers are absent from the runtime catalog and rejected by
 `maps_dynamic_map_render`.
 
+## Select one of the 12 Italy map presets from a script
+
+Each approved map has a stable, descriptive `preset_id` in
+`plugins/maps/map-presets-catalog.v1.json`. Put that ID in the dynamic map
+payload as `map_preset`; the CLI resolves its `map_animation` and `basemap` and
+defaults `map_place` to Italy. You can override `map_place` to render a
+different supported territory. Do not send a conflicting `map_animation` or
+`basemap` alongside a preset; the renderer rejects the mismatch.
+
+```json
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 24,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "map_preset": "italia_editoriale_paper_cutout"
+}
+```
+
+The complete set of IDs is:
+
+```text
+italia_atlante_continentale_turchia
+italia_mappa_storica_duisburg
+italia_scansione_satellitare_pavia
+italia_riempimento_tattico_gerusalemme
+italia_editoriale_voxel
+italia_editoriale_paper_cutout
+italia_editoriale_radar_scuro
+italia_editoriale_connessioni_ad_arco
+italia_editoriale_isola_fluttuante
+italia_basemap_vettoriale_regionale
+italia_basemap_chiara
+italia_basemap_regionale_toscana
+```
+
+The complete script payload example is
+`plugins/maps/showcases/map_preset_script_example.json`.
+
 Render the current runtime set from the ChrononPlugin directory:
 
 ```sh

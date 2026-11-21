@@ -1,0 +1,120 @@
+{
+  "schema": "chrononplugin.maps-presets.v1",
+  "version": 1,
+  "title": "Italy map presets",
+  "selection_source": "RenderingGen/Upload/italia_12_mappe_png_20261120/SELEZIONE_MAPPE_APPROVATE.json",
+  "payload_selector": "map_preset",
+  "defaults": {
+    "map_place": "Italy"
+  },
+  "entries": [
+    {
+      "id": "italia_atlante_continentale_turchia",
+      "selection_id": "italia_map_01",
+      "title": "Atlante continentale — Turchia",
+      "source_png": "01_Atlante_continentale_Turchia.png",
+      "map_animation": "continental_atlas",
+      "basemap": "esri_sat",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_mappa_storica_duisburg",
+      "selection_id": "italia_map_02",
+      "title": "Mappa storica — Duisburg",
+      "source_png": "02_Mappa_storica_Duisburg.png",
+      "map_animation": "historic_location_timeline",
+      "basemap": "esri_sat",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_scansione_satellitare_pavia",
+      "selection_id": "italia_map_03",
+      "title": "Scansione satellitare — Pavia",
+      "source_png": "03_Scansione_satellitare_Pavia.png",
+      "map_animation": "satellite_scan_reveal",
+      "basemap": "esri_sat",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_riempimento_tattico_gerusalemme",
+      "selection_id": "italia_map_04",
+      "title": "Riempimento tattico — Gerusalemme",
+      "source_png": "04_Riempimento_tattico_Gerusalemme.png",
+      "map_animation": "territory_tactical_fill",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_editoriale_voxel",
+      "selection_id": "italia_map_05",
+      "title": "Mappa editoriale a voxel",
+      "source_png": "05_Mappa_editoriale_voxel.png",
+      "map_animation": "editorial_vox",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_editoriale_paper_cutout",
+      "selection_id": "italia_map_06",
+      "title": "Mappa editoriale paper cutout",
+      "source_png": "06_Mappa_editoriale_paper_cutout.png",
+      "map_animation": "editorial_paper_cutout",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_editoriale_radar_scuro",
+      "selection_id": "italia_map_07",
+      "title": "Mappa editoriale radar scuro",
+      "source_png": "07_Mappa_editoriale_radar_scuro.png",
+      "map_animation": "editorial_dark_radar",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_editoriale_connessioni_ad_arco",
+      "selection_id": "italia_map_08",
+      "title": "Mappa editoriale connessioni ad arco",
+      "source_png": "08_Mappa_editoriale_connessioni_ad_arco.png",
+      "map_animation": "editorial_connection_arc",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_editoriale_isola_fluttuante",
+      "selection_id": "italia_map_09",
+      "title": "Mappa editoriale isola fluttuante",
+      "source_png": "09_Mappa_editoriale_isola_fluttuante.png",
+      "map_animation": "editorial_floating_island",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_basemap_vettoriale_regionale",
+      "selection_id": "italia_map_10",
+      "title": "Basemap vettoriale regionale",
+      "source_png": "10_Basemap_vettoriale_regionale.png",
+      "map_animation": "territory_flood_fill",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_basemap_chiara",
+      "selection_id": "italia_map_11",
+      "title": "Basemap chiara",
+      "source_png": "11_Basemap_chiara.png",
+      "map_animation": "territory_glow_reveal",
+      "basemap": "esri_topo",
+      "default_map_place": "Italy"
+    },
+    {
+      "id": "italia_basemap_regionale_toscana",
+      "selection_id": "italia_map_12",
+      "title": "Basemap regionale — Toscana",
+      "source_png": "12_Basemap_regionale_Toscana.png",
+      "map_animation": "territory_extrusion",
+      "basemap": "chronon_editorial",
+      "default_map_place": "Italy"
+    }
+  ]
+}

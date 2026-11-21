@@ -1,0 +1,27 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 24,
+  "fps_den": 1,
+  "duration_us": 4000000,
+  "camera_motion_duration_us": 900000,
+  "camera_animation": "slow_approach",
+  "map_preset": "italia_editoriale_paper_cutout",
+  "map_place": "Italy",
+  "pins": [
+    {
+      "id": "italia",
+      "label": "ITALIA",
+      "latitude": 41.9028,
+      "longitude": 12.4964
+    }
+  ],
+  "show_text": false,
+  "show_location_tag": false,
+  "encoder_profile": {
+    "codec": "libx264",
+    "gpu": false,
+    "preset": "veryfast",
+    "quality": 23
+  }
+}

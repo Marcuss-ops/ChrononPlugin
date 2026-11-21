@@ -110,7 +110,8 @@ void draw_location_callout(cv::Mat& frame, cv::Point anchor,
 }
 
 void draw_mountain_ridge_callout(cv::Mat& frame, const cv::Mat& mountain_overlay,
-                                 double progress, const std::string& label) {
+                                 double progress, const std::string& label,
+                                 bool show_text) {
     if (mountain_overlay.empty() || mountain_overlay.channels() != 4) return;
     progress = std::clamp(progress, 0.0, 1.0);
     const double scale = frame.cols / 1920.0;
@@ -138,17 +139,19 @@ void draw_mountain_ridge_callout(cv::Mat& frame, const cv::Mat& mountain_overlay
             }
         }
     }
-    const std::string title = label.empty() ? "Monti Tauro" : label;
-    int baseline = 0;
-    const double font = 1.65 * scale;
-    const int thickness = std::max(3, cvRound(4.0 * scale));
-    const cv::Size size = cv::getTextSize(title, cv::FONT_HERSHEY_SIMPLEX,
-                                          font, thickness, &baseline);
-    const cv::Point origin((frame.cols - size.width) / 2, cvRound(190.0 * scale));
-    cv::putText(frame, title, origin + cv::Point(2, 3), cv::FONT_HERSHEY_SIMPLEX,
-                font, cv::Scalar(30, 30, 30), thickness + 2, cv::LINE_AA);
-    cv::putText(frame, title, origin, cv::FONT_HERSHEY_SIMPLEX,
-                font, cv::Scalar(252, 252, 249), thickness, cv::LINE_AA);
+    if (show_text) {
+        const std::string title = label.empty() ? "Monti Tauro" : label;
+        int baseline = 0;
+        const double font = 1.65 * scale;
+        const int thickness = std::max(3, cvRound(4.0 * scale));
+        const cv::Size size = cv::getTextSize(title, cv::FONT_HERSHEY_SIMPLEX,
+                                              font, thickness, &baseline);
+        const cv::Point origin((frame.cols - size.width) / 2, cvRound(190.0 * scale));
+        cv::putText(frame, title, origin + cv::Point(2, 3), cv::FONT_HERSHEY_SIMPLEX,
+                    font, cv::Scalar(30, 30, 30), thickness + 2, cv::LINE_AA);
+        cv::putText(frame, title, origin, cv::FONT_HERSHEY_SIMPLEX,
+                    font, cv::Scalar(252, 252, 249), thickness, cv::LINE_AA);
+    }
     std::vector<cv::Point> arrow{{cvRound(1110.0 * scale), cvRound(265.0 * scale)},
         {cvRound(1165.0 * scale), cvRound(300.0 * scale)},
         {cvRound(1235.0 * scale), cvRound(350.0 * scale)},
@@ -261,7 +264,8 @@ void draw_historic_location_timeline(cv::Mat& frame,
                                      double zoom, double progress,
                                      cv::Point location,
                                      const std::string& city,
-                                     const std::string& date_label) {
+                                     const std::string& date_label,
+                                     bool show_text) {
     progress = std::clamp(progress, 0.0, 1.0);
     cv::Mat gray, gray_bgr, tint(frame.size(), CV_8UC3, cv::Scalar(55, 44, 31));
     cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
@@ -293,10 +297,12 @@ void draw_historic_location_timeline(cv::Mat& frame,
              std::max(2, cvRound(frame.rows / 360.0)), cv::LINE_AA);
     cv::circle(frame, {marker_x, y}, cvRound(7.0 * frame.rows / 1080.0),
                cv::Scalar(247, 249, 250), cv::FILLED, cv::LINE_AA);
-    cv::putText(frame, date_label, {margin, y - cvRound(22.0 * frame.rows / 1080.0)},
-                cv::FONT_HERSHEY_SIMPLEX, 0.8 * frame.rows / 1080.0,
-                cv::Scalar(246, 248, 249), std::max(1, cvRound(frame.rows / 540.0)),
-                cv::LINE_AA);
+    if (show_text && !date_label.empty()) {
+        cv::putText(frame, date_label, {margin, y - cvRound(22.0 * frame.rows / 1080.0)},
+                    cv::FONT_HERSHEY_SIMPLEX, 0.8 * frame.rows / 1080.0,
+                    cv::Scalar(246, 248, 249), std::max(1, cvRound(frame.rows / 540.0)),
+                    cv::LINE_AA);
+    }
 }
 
 void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons,
@@ -765,7 +771,7 @@ void draw_volumetric_laser_scan(cv::Mat& frame,
                                 const std::vector<GeoPolygon>& polygons,
                                 std::pair<double, double> camera_anchor,
                                 double zoom, double progress,
-                                const std::string& label) {
+                                const std::string& label, bool show_text) {
     if (frame.empty()) return;
     progress = std::clamp(progress, 0.0, 1.0);
     const double eased = progress * progress * (3.0 - 2.0 * progress);
@@ -816,23 +822,25 @@ void draw_volumetric_laser_scan(cv::Mat& frame,
              cv::Scalar(255, 240, 170), std::max(1, cvRound(2.0 * scale)),
              cv::LINE_AA);
 
-    const int x = cvRound(frame.cols * 0.07);
-    cv::putText(frame, "VOLUMETRIC 2.5D / LASER SCAN", {x, cvRound(frame.rows * 0.10)},
-                cv::FONT_HERSHEY_SIMPLEX, 0.72 * scale,
-                cv::Scalar(255, 220, 90), std::max(1, cvRound(1.5 * scale)),
-                cv::LINE_AA);
-    cv::putText(frame, label.empty() ? "JERUSALEM" : label,
-                {x, cvRound(frame.rows * 0.90)},
-                cv::FONT_HERSHEY_DUPLEX, 1.3 * scale,
-                cv::Scalar(248, 250, 252), std::max(2, cvRound(2.0 * scale)),
-                cv::LINE_AA);
+    if (show_text) {
+        const int x = cvRound(frame.cols * 0.07);
+        cv::putText(frame, "VOLUMETRIC 2.5D / LASER SCAN", {x, cvRound(frame.rows * 0.10)},
+                    cv::FONT_HERSHEY_SIMPLEX, 0.72 * scale,
+                    cv::Scalar(255, 220, 90), std::max(1, cvRound(1.5 * scale)),
+                    cv::LINE_AA);
+        cv::putText(frame, label.empty() ? "JERUSALEM" : label,
+                    {x, cvRound(frame.rows * 0.90)},
+                    cv::FONT_HERSHEY_DUPLEX, 1.3 * scale,
+                    cv::Scalar(248, 250, 252), std::max(2, cvRound(2.0 * scale)),
+                    cv::LINE_AA);
+    }
 }
 
 void draw_vector_particle_flow(cv::Mat& frame,
                                const std::vector<GeoPolygon>& polygons,
                                std::pair<double, double> camera_anchor,
                                double zoom, double progress,
-                               const std::string& label) {
+                               const std::string& label, bool show_text) {
     if (frame.empty()) return;
     progress = std::clamp(progress, 0.0, 1.0);
     const double scale = std::clamp(frame.rows / 1080.0, 0.45, 1.5);
@@ -890,22 +898,24 @@ void draw_vector_particle_flow(cv::Mat& frame,
                    cv::Scalar(255, 245, 180), cv::FILLED, cv::LINE_AA);
     }
 
-    const int x = cvRound(frame.cols * 0.07);
-    cv::putText(frame, "VECTOR FLOW / 560 CPU AGENTS",
-                {x, cvRound(frame.rows * 0.10)}, cv::FONT_HERSHEY_SIMPLEX,
-                0.72 * scale, cv::Scalar(80, 220, 255),
-                std::max(1, cvRound(1.5 * scale)), cv::LINE_AA);
-    cv::putText(frame, label.empty() ? "JERUSALEM" : label,
-                {x, cvRound(frame.rows * 0.90)}, cv::FONT_HERSHEY_DUPLEX,
-                1.3 * scale, cv::Scalar(248, 250, 252),
-                std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    if (show_text) {
+        const int x = cvRound(frame.cols * 0.07);
+        cv::putText(frame, "VECTOR FLOW / 560 CPU AGENTS",
+                    {x, cvRound(frame.rows * 0.10)}, cv::FONT_HERSHEY_SIMPLEX,
+                    0.72 * scale, cv::Scalar(80, 220, 255),
+                    std::max(1, cvRound(1.5 * scale)), cv::LINE_AA);
+        cv::putText(frame, label.empty() ? "JERUSALEM" : label,
+                    {x, cvRound(frame.rows * 0.90)}, cv::FONT_HERSHEY_DUPLEX,
+                    1.3 * scale, cv::Scalar(248, 250, 252),
+                    std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    }
 }
 
 void draw_dark_mirror_diorama(cv::Mat& frame,
                               const std::vector<GeoPolygon>& polygons,
                               std::pair<double, double> camera_anchor,
                               double zoom, double progress,
-                              const std::string& label) {
+                              const std::string& label, bool show_text) {
     if (frame.empty()) return;
     progress = std::clamp(progress, 0.0, 1.0);
     const double scale = std::clamp(frame.rows / 1080.0, 0.45, 1.5);
@@ -973,22 +983,24 @@ void draw_dark_mirror_diorama(cv::Mat& frame,
     cv::GaussianBlur(glow, glow, {0, 0}, 12.0 * scale);
     cv::addWeighted(frame, 1.0, glow, 0.75, 0.0, frame);
 
-    const int x = cvRound(width * 0.07);
-    cv::putText(frame, "DARK MIRROR / DIORAMA", {x, cvRound(height * 0.10)},
-                cv::FONT_HERSHEY_SIMPLEX, 0.72 * scale,
-                cv::Scalar(255, 180, 70), std::max(1, cvRound(1.5 * scale)),
-                cv::LINE_AA);
-    cv::putText(frame, label.empty() ? "JERUSALEM" : label,
-                {x, cvRound(height * 0.49)}, cv::FONT_HERSHEY_DUPLEX,
-                1.3 * scale, cv::Scalar(248, 250, 252),
-                std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    if (show_text) {
+        const int x = cvRound(width * 0.07);
+        cv::putText(frame, "DARK MIRROR / DIORAMA", {x, cvRound(height * 0.10)},
+                    cv::FONT_HERSHEY_SIMPLEX, 0.72 * scale,
+                    cv::Scalar(255, 180, 70), std::max(1, cvRound(1.5 * scale)),
+                    cv::LINE_AA);
+        cv::putText(frame, label.empty() ? "JERUSALEM" : label,
+                    {x, cvRound(height * 0.49)}, cv::FONT_HERSHEY_DUPLEX,
+                    1.3 * scale, cv::Scalar(248, 250, 252),
+                    std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    }
 }
 
 void draw_voronoi_heat_contours(cv::Mat& frame,
                                 const std::vector<GeoPolygon>& polygons,
                                 std::pair<double, double> camera_anchor,
                                 double zoom, double progress,
-                                const std::string& label) {
+                                const std::string& label, bool show_text) {
     if (frame.empty()) return;
     progress = std::clamp(progress, 0.0, 1.0);
     const double scale = std::clamp(frame.rows / 1080.0, 0.45, 1.5);
@@ -1103,22 +1115,24 @@ void draw_voronoi_heat_contours(cv::Mat& frame,
                    cv::Scalar(255, 245, 180), cv::FILLED, cv::LINE_AA);
     }
 
-    const int x = cvRound(frame.cols * 0.07);
-    cv::putText(frame, "VORONOI HEAT / LIVE CONTOURS",
-                {x, cvRound(frame.rows * 0.10)}, cv::FONT_HERSHEY_SIMPLEX,
-                0.72 * scale, cv::Scalar(120, 220, 255),
-                std::max(1, cvRound(1.5 * scale)), cv::LINE_AA);
-    cv::putText(frame, label.empty() ? "JERUSALEM" : label,
-                {x, cvRound(frame.rows * 0.90)}, cv::FONT_HERSHEY_DUPLEX,
-                1.3 * scale, cv::Scalar(248, 250, 252),
-                std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    if (show_text) {
+        const int x = cvRound(frame.cols * 0.07);
+        cv::putText(frame, "VORONOI HEAT / LIVE CONTOURS",
+                    {x, cvRound(frame.rows * 0.10)}, cv::FONT_HERSHEY_SIMPLEX,
+                    0.72 * scale, cv::Scalar(120, 220, 255),
+                    std::max(1, cvRound(1.5 * scale)), cv::LINE_AA);
+        cv::putText(frame, label.empty() ? "JERUSALEM" : label,
+                    {x, cvRound(frame.rows * 0.90)}, cv::FONT_HERSHEY_DUPLEX,
+                    1.3 * scale, cv::Scalar(248, 250, 252),
+                    std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    }
 }
 
 void draw_holographic_postfx(cv::Mat& frame,
                              const std::vector<GeoPolygon>& polygons,
                              std::pair<double, double> camera_anchor,
                              double zoom, double progress,
-                             const std::string& label) {
+                             const std::string& label, bool show_text) {
     if (frame.empty()) return;
     progress = std::clamp(progress, 0.0, 1.0);
     const double scale = std::clamp(frame.rows / 1080.0, 0.45, 1.5);
@@ -1196,18 +1210,22 @@ void draw_holographic_postfx(cv::Mat& frame,
              std::max(1, cvRound(2.0 * scale)), cv::LINE_AA);
     cv::line(distorted, {width - 24, 24}, {width - 24, 80}, hud,
              std::max(1, cvRound(2.0 * scale)), cv::LINE_AA);
-    cv::putText(distorted, "HOLOGRAPHIC OPTIC // LIVE",
-                {cvRound(width * 0.07), cvRound(height * 0.10)},
-                cv::FONT_HERSHEY_SIMPLEX, 0.72 * scale, hud,
-                std::max(1, cvRound(1.5 * scale)), cv::LINE_AA);
+    if (show_text) {
+        cv::putText(distorted, "HOLOGRAPHIC OPTIC // LIVE",
+                    {cvRound(width * 0.07), cvRound(height * 0.10)},
+                    cv::FONT_HERSHEY_SIMPLEX, 0.72 * scale, hud,
+                    std::max(1, cvRound(1.5 * scale)), cv::LINE_AA);
+    }
     const int sweep = cvRound(std::fmod(progress * 1.6, 1.0) * height);
     cv::line(distorted, {0, sweep}, {width - 1, sweep}, cv::Scalar(180, 120, 40),
              1, cv::LINE_AA);
-    cv::putText(distorted, label.empty() ? "JERUSALEM" : label,
-                {cvRound(width * 0.07), cvRound(height * 0.88)},
-                cv::FONT_HERSHEY_DUPLEX, 1.35 * scale,
-                cv::Scalar(248, 250, 252),
-                std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    if (show_text) {
+        cv::putText(distorted, label.empty() ? "JERUSALEM" : label,
+                    {cvRound(width * 0.07), cvRound(height * 0.88)},
+                    cv::FONT_HERSHEY_DUPLEX, 1.35 * scale,
+                    cv::Scalar(248, 250, 252),
+                    std::max(2, cvRound(2.0 * scale)), cv::LINE_AA);
+    }
     frame = distorted;
 }
 

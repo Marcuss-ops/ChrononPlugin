@@ -41,9 +41,21 @@ struct VectorMapSources {
     std::string italy_admin2_geojson;
 };
 
+/// Optional on-disk tile cache (ELIM-05). Tiles are immutable and a pure
+/// function of (source bytes, z, x, y), so the key is correct by construction;
+/// the persistent copy only avoids re-rasterizing the same area in a later
+/// render. Empty dir = disabled (the historical, per-render behaviour).
+struct DiskCacheOptions {
+    std::string dir;
+    /// Hard bound on the cache directory. Eviction is LRU by mtime.
+    std::uint64_t max_bytes = 2ull * 1024 * 1024 * 1024;  // 2 GiB
+    /// How many writes between budget sweeps. 1 = sweep every write (tests).
+    std::uint32_t evict_every = 64;
+};
+
 class VectorPlateRaster {
   public:
-    explicit VectorPlateRaster(VectorMapSources sources);
+    explicit VectorPlateRaster(VectorMapSources sources, DiskCacheOptions disk = {});
 
     /// One 256x256 BGR paper tile, mirroring render_vector_tile(z, x, y).
     /// x is wrapped like Python's modulo, y outside the pyramid yields the
@@ -60,6 +72,10 @@ class VectorPlateRaster {
     /// Actual local tile rasterizations and cache hits during plate composition.
     [[nodiscard]] std::int64_t tile_cache_hits() const { return tile_cache_hits_; }
     [[nodiscard]] std::int64_t tile_cache_misses() const { return tile_cache_misses_; }
+    /// Tiles served from the PERSISTENT cache instead of being rasterized.
+    [[nodiscard]] std::int64_t tile_disk_hits() const { return tile_disk_hits_; }
+    /// Tiles written to the persistent cache.
+    [[nodiscard]] std::int64_t tile_disk_writes() const { return tile_disk_writes_; }
 
   private:
     // Outer ring as raw lon/lat positions (the only ring ever drawn, exactly
@@ -85,6 +101,19 @@ class VectorPlateRaster {
     mutable std::map<std::tuple<int, std::int64_t, std::int64_t>, cv::Mat> tile_cache_;
     mutable std::int64_t tile_cache_hits_ = 0;
     mutable std::int64_t tile_cache_misses_ = 0;
+
+    // Persistent cache. key = hash of the source rings, so a different
+    // GeoJSON can never answer with another source's tile.
+    DiskCacheOptions disk_;
+    std::string disk_source_key_;
+    mutable std::int64_t tile_disk_hits_ = 0;
+    mutable std::int64_t tile_disk_writes_ = 0;
+    mutable std::uint64_t disk_writes_since_sweep_ = 0;
+
+    [[nodiscard]] std::string tile_disk_path(int z, std::int64_t x, std::int64_t y) const;
+    [[nodiscard]] cv::Mat load_tile_from_disk(int z, std::int64_t x, std::int64_t y) const;
+    void store_tile_to_disk(int z, std::int64_t x, std::int64_t y, const cv::Mat& tile) const;
+    void enforce_disk_budget() const;
 };
 
 }  // namespace chrononplugin::maps

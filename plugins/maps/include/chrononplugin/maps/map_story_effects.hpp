@@ -60,27 +60,27 @@ void draw_volumetric_laser_scan(cv::Mat& frame,
                                 const std::vector<GeoPolygon>& polygons,
                                 std::pair<double, double> camera_anchor,
                                 double zoom, double progress,
-                                const std::string& label);
+                                const std::string& label, bool show_text = true);
 void draw_vector_particle_flow(cv::Mat& frame,
                                const std::vector<GeoPolygon>& polygons,
                                std::pair<double, double> camera_anchor,
                                double zoom, double progress,
-                               const std::string& label);
+                               const std::string& label, bool show_text = true);
 void draw_dark_mirror_diorama(cv::Mat& frame,
                               const std::vector<GeoPolygon>& polygons,
                               std::pair<double, double> camera_anchor,
                               double zoom, double progress,
-                              const std::string& label);
+                              const std::string& label, bool show_text = true);
 void draw_voronoi_heat_contours(cv::Mat& frame,
                                 const std::vector<GeoPolygon>& polygons,
                                 std::pair<double, double> camera_anchor,
                                 double zoom, double progress,
-                                const std::string& label);
+                                const std::string& label, bool show_text = true);
 void draw_holographic_postfx(cv::Mat& frame,
                              const std::vector<GeoPolygon>& polygons,
                              std::pair<double, double> camera_anchor,
                              double zoom, double progress,
-                             const std::string& label);
+                             const std::string& label, bool show_text = true);
 void draw_light_beam_drop(cv::Mat& frame, cv::Point center, double progress,
                           const std::string& label);
 void draw_city_network(cv::Mat& frame, const std::vector<cv::Point>& nodes,
@@ -93,7 +93,8 @@ void draw_territory_extrusion(cv::Mat& frame,
 void draw_location_callout(cv::Mat& frame, cv::Point anchor,
                            const std::string& label, double opacity = 1.0);
 void draw_mountain_ridge_callout(cv::Mat& frame, const cv::Mat& mountain_overlay,
-                                 double progress, const std::string& label);
+                                 double progress, const std::string& label,
+                                 bool show_text = true);
 void draw_continental_atlas(cv::Mat& frame,
                             const GeoFeatureCollection& countries,
                             std::pair<double, double> camera_anchor,
@@ -107,6 +108,7 @@ void draw_historic_location_timeline(cv::Mat& frame,
                                      double zoom, double progress,
                                      cv::Point location,
                                      const std::string& city,
-                                     const std::string& date_label);
+                                     const std::string& date_label,
+                                     bool show_text = true);
 
 }  // namespace chrononplugin::maps

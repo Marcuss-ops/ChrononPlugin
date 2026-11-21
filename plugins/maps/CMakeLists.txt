@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+include(GNUInstallDirs)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -205,7 +206,7 @@ target_link_libraries(maps_editorial_scene_emit PRIVATE chrononplugin_maps)
 # Editorial style gallery: six documentary map treatments rendered natively
 # from the simplified US-states catalog. FreeType is optional for the rest of
 # the plugin, so the tool is built only where the font library is available.
-find_package(Freetype QUIET)
+find_package(Freetype REQUIRED)
 if(Freetype_FOUND)
     # EditorialMapPack is a reusable rendering library, not a one-off gallery.
     # Keeping it separate from chrononplugin_maps means the certified map lane
@@ -219,7 +220,8 @@ if(Freetype_FOUND)
     target_compile_definitions(chrononplugin_editorial_map_pack PRIVATE
         CHRONON_MAPS_EDITORIAL_STATES_DEFAULT="${CMAKE_CURRENT_SOURCE_DIR}/assets/us_states_editorial.geojson"
         CHRONON_MAPS_COUNTRIES_DEFAULT="${CHRONON_MAPS_CATALOG_DIR}/ne_50m_admin_0_countries.geojson"
-        CHRONON_MAPS_FONTS_DIR_DEFAULT="${CMAKE_CURRENT_SOURCE_DIR}/../../../Chronon3d/assets/fonts")
+        CHRONON_MAPS_FONTS_DIR_DEFAULT="${CMAKE_INSTALL_FULL_DATADIR}/chrononplugin/fonts"
+        CHRONON_MAPS_FONTS_DIR_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/../../../Chronon3d/assets/fonts")
 
     add_executable(maps_editorial_style_gallery
         tools/map_native/editorial_style_gallery.cpp)
@@ -265,7 +267,6 @@ endif()
 # refactored/scripts/systemd/pipelinegen.service.d/map-native.conf points at
 # these paths (bin/maps_dynamic_map_render + share/chrononplugin/maps-catalog);
 # the runtime container image copies the same layout under its prefix.
-include(GNUInstallDirs)
 install(TARGETS maps_dynamic_map_render
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 # The machine-readable renderer vocabulary travels with the binary: consumers
@@ -283,6 +284,10 @@ install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM2.si
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
 install(FILES "${CHRONON_MAPS_CATALOG_DIR}/italy_admin/geoBoundaries_ITA_ADM3.simplified.geojson"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/italy_admin")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/showcases/assets/taurus_mountain_range.png"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/maps-catalog/showcases/assets")
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../../Chronon3d/assets/fonts/"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/chrononplugin/fonts")
 # The renderer and its default test suite are native C++. Python is only an
 # optional reference oracle for cross-implementation parity checks; it is not
 # needed to configure, build, or run ChrononPlugin maps.

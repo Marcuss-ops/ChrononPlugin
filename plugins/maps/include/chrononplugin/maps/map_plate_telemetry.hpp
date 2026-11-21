@@ -32,6 +32,9 @@ namespace chrononplugin::maps {
 struct TileTelemetry {
     std::int64_t disk_cache_hits = 0;
     std::int64_t disk_cache_misses = 0;
+    /// Subset of disk_cache_hits served by the PERSISTENT tile cache (ELIM-05),
+    /// i.e. tiles produced by an earlier render of the same area.
+    std::int64_t persistent_cache_hits = 0;
     std::int64_t network_fetches = 0;
     std::int64_t fallbacks = 0;
     std::int64_t bytes_downloaded = 0;

@@ -18,6 +18,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -29,6 +30,64 @@
 #include <vector>
 
 namespace {
+
+struct MapPreset {
+    const char* id;
+    const char* title;
+    const char* animation;
+    const char* basemap;
+};
+
+// Stable, script-facing IDs for the twelve approved Italy map treatments.
+// Keep this table in sync with map-presets-catalog.v1.json and the PNG
+// selection manifest in RenderingGen/Upload.
+constexpr std::array<MapPreset, 12> kItalyMapPresets{{
+    {"italia_atlante_continentale_turchia", "Atlante continentale — Turchia", "continental_atlas", "esri_sat"},
+    {"italia_mappa_storica_duisburg", "Mappa storica — Duisburg", "historic_location_timeline", "esri_sat"},
+    {"italia_scansione_satellitare_pavia", "Scansione satellitare — Pavia", "satellite_scan_reveal", "esri_sat"},
+    {"italia_riempimento_tattico_gerusalemme", "Riempimento tattico — Gerusalemme", "territory_tactical_fill", "chronon_editorial"},
+    {"italia_editoriale_voxel", "Mappa editoriale a voxel", "editorial_vox", "chronon_editorial"},
+    {"italia_editoriale_paper_cutout", "Mappa editoriale paper cutout", "editorial_paper_cutout", "chronon_editorial"},
+    {"italia_editoriale_radar_scuro", "Mappa editoriale radar scuro", "editorial_dark_radar", "chronon_editorial"},
+    {"italia_editoriale_connessioni_ad_arco", "Mappa editoriale connessioni ad arco", "editorial_connection_arc", "chronon_editorial"},
+    {"italia_editoriale_isola_fluttuante", "Mappa editoriale isola fluttuante", "editorial_floating_island", "chronon_editorial"},
+    {"italia_basemap_vettoriale_regionale", "Basemap vettoriale regionale", "territory_flood_fill", "chronon_editorial"},
+    {"italia_basemap_chiara", "Basemap chiara", "territory_glow_reveal", "esri_topo"},
+    {"italia_basemap_regionale_toscana", "Basemap regionale — Toscana", "territory_extrusion", "chronon_editorial"},
+}};
+
+[[nodiscard]] bool resolve_map_preset(nlohmann::json& payload) {
+    if (!payload.contains("map_preset")) return true;
+    if (!payload.at("map_preset").is_string()) {
+        std::fprintf(stderr, "payload map_preset must be a string identifier\n");
+        return false;
+    }
+    const std::string id = payload.at("map_preset").get<std::string>();
+    for (const auto& preset : kItalyMapPresets) {
+        if (id != preset.id) continue;
+        if (payload.contains("map_animation") &&
+            payload.at("map_animation") != preset.animation) {
+            std::fprintf(stderr,
+                         "map_preset '%s' conflicts with map_animation '%s'\n",
+                         preset.id, payload.at("map_animation").dump().c_str());
+            return false;
+        }
+        if (payload.contains("basemap") &&
+            payload.at("basemap") != preset.basemap) {
+            std::fprintf(stderr,
+                         "map_preset '%s' conflicts with basemap '%s'\n",
+                         preset.id, payload.at("basemap").dump().c_str());
+            return false;
+        }
+        payload["map_animation"] = preset.animation;
+        payload["basemap"] = preset.basemap;
+        if (!payload.contains("map_place")) payload["map_place"] = "Italy";
+        return true;
+    }
+    std::fprintf(stderr, "unknown map_preset '%s'; see map-presets-catalog.v1.json\n",
+                 id.c_str());
+    return false;
+}
 
 void usage(const char* argv0) {
     std::fprintf(stderr,
@@ -46,7 +105,8 @@ void usage(const char* argv0) {
         const std::size_t split = canonical.find('_');
         const std::string short_id = split == std::string::npos
             ? canonical : canonical.substr(split + 1);
-        if (id == canonical || id == short_id) {
+        if (id == canonical || id == short_id ||
+            id == "editorial_" + short_id) {
             out = style;
             return true;
         }
@@ -113,6 +173,10 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "payload is not valid JSON: %s\n", exc.what());
         return 2;
     }
+    if (!resolve_map_preset(parsed)) return 2;
+    // Forward the canonicalized payload, so the plate renderer sees the
+    // animation/basemap resolved from map_preset as well as the original ID.
+    request.payload_json = parsed.dump();
     const long long fps_num = parsed.value("fps_num", -1);
     const long long fps_den = parsed.value("fps_den", -1);
     const long long duration_us = parsed.value("duration_us", -1);
@@ -157,19 +221,42 @@ int main(int argc, char** argv) {
         pack.fps_den = static_cast<int>(fps_den);
         pack.frame_count = static_cast<int>(request.frame_count);
         pack.crf = 23;
+        pack.highlight_country = parsed.value("map_place", "");
+        if (pack.highlight_country.empty()) {
+            pack.highlight_country = parsed.value("highlight_country", "");
+        }
+        if (!pack.highlight_country.empty()) {
+            pack.highlight_state.clear();
+            pack.title = "ITALIA";
+            pack.subtitle = "PAESE EUROPEO";
+            pack.pin_label = "ROMA";
+            pack.pin_latitude = 41.9028;
+            pack.pin_longitude = 12.4964;
+        }
 
         if (parsed.contains("encoder_profile") &&
             parsed.at("encoder_profile").is_object()) {
             const auto& profile = parsed.at("encoder_profile");
             const std::string codec = profile.value("codec", "");
             const std::string preset = profile.value("preset", "");
-            if ((!codec.empty() && codec != "libx264") ||
-                (!preset.empty() && preset != "veryfast")) {
+            const bool nvenc = codec == "h264_nvenc" &&
+                profile.value("gpu", false) && preset == "p6" &&
+                profile.value("quality", 0) == 15;
+            const bool x264 = (codec.empty() || codec == "libx264") &&
+                (!profile.value("gpu", false)) &&
+                (preset.empty() || preset == "veryfast");
+            if (!nvenc && !x264) {
                 std::fprintf(stderr,
-                             "editorial map supports only libx264/veryfast\n");
+                             "editorial map supports libx264/veryfast or h264_nvenc/p6\n");
                 return 1;
             }
-            pack.crf = profile.value("quality", 23);
+            pack.gpu_encoder = nvenc;
+            if (nvenc) {
+                pack.gpu_index = 0;
+                pack.gpu_quality = 15;
+            } else {
+                pack.crf = profile.value("quality", 23);
+            }
         }
 
         if (parsed.contains("highlight_state") &&
@@ -221,11 +308,11 @@ int main(int argc, char** argv) {
         telemetry.gate_ms = 0.0;
         telemetry.engine_fallback_frames = 0;
         telemetry.output_bytes = static_cast<std::int64_t>(output_bytes);
-        telemetry.video_encoder = "libx264";
-        telemetry.gpu_encoder = false;
+        telemetry.video_encoder = pack.gpu_encoder ? "h264_nvenc" : "libx264";
+        telemetry.gpu_encoder = pack.gpu_encoder;
         telemetry.gpu_map_sampler = "cpu";
-        telemetry.encoder_preset = "veryfast";
-        telemetry.encoder_quality = pack.crf;
+        telemetry.encoder_preset = pack.gpu_encoder ? "p6" : "veryfast";
+        telemetry.encoder_quality = pack.gpu_encoder ? pack.gpu_quality : pack.crf;
         telemetry.tile.disk_cache_hits = 1;
         telemetry.tile.disk_cache_misses = 0;
         telemetry.tile.network_fetches = 0;
