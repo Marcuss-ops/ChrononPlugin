@@ -92,7 +92,10 @@ else()
 endif()
 
 add_library(chrononplugin_maps STATIC
-    src/editorial_map_scene.cpp
+    src/editorial_map_scene_entry.cpp
+    src/editorial_map_scene_geometry.cpp
+    src/editorial_map_scene_layout.cpp
+    src/editorial_map_scene_styles.cpp
     src/editorial_map_style.cpp
     src/esri_satellite.cpp
     src/feature_query.cpp
@@ -103,11 +106,21 @@ add_library(chrononplugin_maps STATIC
     src/map_label_render.cpp
     src/map_plate_compose.cpp
     src/map_plate_raster.cpp
-    src/map_plate_render.cpp
+    src/map_plate_raster_tiles.cpp
+    src/map_plate_render_encoder.cpp
+    src/map_plate_render_frames.cpp
+    src/map_plate_render_payload.cpp
+    src/map_plate_render_pipeline.cpp
+    src/map_plate_render_telemetry.cpp
     src/map_renderer_catalog.cpp
     src/map_plate_telemetry.cpp
     src/map_route_render.cpp
-    src/map_story_effects.cpp
+    src/map_story_effects_finish.cpp
+    src/map_story_effects_primitives.cpp
+    src/map_story_effects_story.cpp
+    src/map_story_effects_tactical.cpp
+    src/map_story_effects_territory.cpp
+    src/map_story_effects_variants.cpp
     src/territory_change.cpp
 )
 
@@ -126,6 +139,7 @@ target_compile_definitions(chrononplugin_maps PRIVATE
 # (TICKET-MAPS-NATIVE-PORT section 4.2).
 file(GLOB _maps_renderer_sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/chrononplugin/maps/*.hpp")
 set(_maps_fingerprint_input "")
 foreach(_src IN LISTS _maps_renderer_sources)
@@ -213,7 +227,11 @@ if(Freetype_FOUND)
     # does not gain a hard FreeType dependency; only consumers that ask for the
     # editorial treatments link this target.
     add_library(chrononplugin_editorial_map_pack STATIC
-        src/editorial_map_pack.cpp)
+        src/editorial_map_pack.cpp
+        src/editorial_map_pack_geo.cpp
+        src/editorial_map_pack_overlays.cpp
+        src/editorial_map_pack_plates.cpp
+        src/editorial_map_pack_text.cpp)
     target_link_libraries(chrononplugin_editorial_map_pack PUBLIC
         chrononplugin_maps
         Freetype::Freetype)
@@ -248,7 +266,12 @@ find_library(CHRONON_MAPS_EGL_LIBRARY NAMES EGL)
 find_library(CHRONON_MAPS_GLES_LIBRARY NAMES GLESv2)
 if(CHRONON_MAPS_EGL_INCLUDE_DIR AND CHRONON_MAPS_GLES_INCLUDE_DIR AND
    CHRONON_MAPS_EGL_LIBRARY AND CHRONON_MAPS_GLES_LIBRARY)
-    add_executable(maps_gpu_render tools/map_gpu/map_gpu_render.cpp)
+    add_executable(maps_gpu_render
+        tools/map_gpu/map_gpu_geometry.cpp
+        tools/map_gpu/map_gpu_gl.cpp
+        tools/map_gpu/map_gpu_hud.cpp
+        tools/map_gpu/map_gpu_render.cpp
+        tools/map_gpu/map_gpu_renderer.cpp)
     target_include_directories(maps_gpu_render PRIVATE
         ${CHRONON_MAPS_EGL_INCLUDE_DIR}
         ${CHRONON_MAPS_GLES_INCLUDE_DIR})

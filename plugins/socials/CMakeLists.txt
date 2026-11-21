@@ -5,6 +5,11 @@ find_package(nlohmann_json CONFIG REQUIRED)
 
 add_library(chrononplugin_socials STATIC
     src/social_showcase.cpp
+    src/social_showcase_builder.cpp
+    src/social_showcase_reddit.cpp
+    src/social_showcase_tiktok.cpp
+    src/social_showcase_x.cpp
+    src/social_showcase_youtube.cpp
 )
 target_compile_features(chrononplugin_socials PUBLIC cxx_std_20)
 target_include_directories(chrononplugin_socials PUBLIC

@@ -8,7 +8,8 @@
 //
 // The public API is deliberately free of OpenCV and FreeType types, so a
 // consumer links the pack without inheriting its raster dependencies. The
-// implementation lives in `plugins/maps/src/editorial_map_pack.cpp` and is
+// implementation is split by concern under `plugins/maps/src/`
+// (editorial_map_pack.cpp plus the _geo/_text/_plates/_overlays units) and is
 // built only when FreeType is available.
 //
 // Styles:
