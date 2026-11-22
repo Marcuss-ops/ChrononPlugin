@@ -11,13 +11,17 @@
 #include "map_plate_raster_internal.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <system_error>
+#include <unordered_map>
 #include <vector>
 
 #include <unistd.h>
@@ -30,6 +34,10 @@
 namespace chrononplugin::maps {
 
 using namespace raster_detail;
+
+namespace {
+std::atomic<std::size_t> g_raster_geojson_parse_count{0};
+}  // namespace
 
 namespace {
 
@@ -95,9 +103,40 @@ void append_geometry_rings(const nlohmann::json& geometry,
 }
 
 }  // namespace
+std::size_t VectorPlateRaster::geojson_parse_count() {
+    return g_raster_geojson_parse_count.load(std::memory_order_relaxed);
+}
+
 std::vector<VectorPlateRaster::RawRing> VectorPlateRaster::parse_geojson(
     const std::string& path) {
-    std::FILE* f = std::fopen(path.c_str(), "rb");
+    // Map jobs run back-to-back against the same catalogs. Keep the parsed
+    // rings keyed by canonical path + size + mtime so only a changed source is
+    // parsed again; the cap keeps a long-lived worker bounded.
+    struct CacheEntry {
+        std::shared_ptr<const std::vector<RawRing>> rings;
+        std::uintmax_t size{0};
+        std::filesystem::file_time_type mtime{};
+    };
+    static std::mutex cache_mutex;
+    static std::unordered_map<std::string, CacheEntry> cache;
+
+    std::error_code ec;
+    std::string key = std::filesystem::weakly_canonical(path, ec);
+    if (ec) key = path;
+    const std::uintmax_t size = std::filesystem::file_size(key, ec);
+    if (ec) throw std::runtime_error("cannot stat GeoJSON source: " + path);
+    const auto mtime = std::filesystem::last_write_time(key, ec);
+    if (ec) throw std::runtime_error("cannot stat GeoJSON source: " + path);
+    {
+        std::lock_guard lock(cache_mutex);
+        const auto it = cache.find(key);
+        if (it != cache.end() && it->second.size == size &&
+            it->second.mtime == mtime) {
+            return *it->second.rings;
+        }
+    }
+
+    std::FILE* f = std::fopen(key.c_str(), "rb");
     if (f == nullptr) {
         throw std::runtime_error("cannot open GeoJSON source: " + path);
     }
@@ -113,14 +152,20 @@ std::vector<VectorPlateRaster::RawRing> VectorPlateRaster::parse_geojson(
     if (!doc.contains("features")) {
         throw std::runtime_error("GeoJSON has no features: " + path);
     }
-    std::vector<RawRing> rings;
+    auto rings = std::make_shared<std::vector<RawRing>>();
     for (const auto& feature : doc.at("features")) {
         // feature.get("geometry") or {}
         const auto it = feature.find("geometry");
         if (it == feature.end() || it->is_null()) continue;
-        append_geometry_rings(*it, rings);
+        append_geometry_rings(*it, *rings);
     }
-    return rings;
+    g_raster_geojson_parse_count.fetch_add(1, std::memory_order_relaxed);
+    {
+        std::lock_guard lock(cache_mutex);
+        if (cache.size() >= 8) cache.clear();
+        cache[key] = CacheEntry{rings, size, mtime};
+    }
+    return *rings;
 }
 
 VectorPlateRaster::VectorPlateRaster(VectorMapSources sources, DiskCacheOptions disk)

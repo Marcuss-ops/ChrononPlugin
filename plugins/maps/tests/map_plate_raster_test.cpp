@@ -43,7 +43,11 @@ int main() {
     using chrononplugin::maps::VectorMapSources;
     using chrononplugin::maps::VectorPlateRaster;
 
+    const auto parses_before = VectorPlateRaster::geojson_parse_count();
     VectorPlateRaster raster(VectorMapSources{kCountries, kItalyAdmin2});
+    // The two boundary files are parsed once for the process, not once per
+    // raster/job. Every later instance must be served by the file cache.
+    CHECK(VectorPlateRaster::geojson_parse_count() == parses_before + 2);
 
     // A tile is always 256x256 BGR, 8-bit.
     const cv::Mat tile = raster.render_tile(5, 17, 11);

@@ -76,6 +76,8 @@ class VectorPlateRaster {
     [[nodiscard]] std::int64_t tile_disk_hits() const { return tile_disk_hits_; }
     /// Tiles written to the persistent cache.
     [[nodiscard]] std::int64_t tile_disk_writes() const { return tile_disk_writes_; }
+    /// Boundary GeoJSON files actually parsed in this process (cache miss).
+    [[nodiscard]] static std::size_t geojson_parse_count();
 
   private:
     // Outer ring as raw lon/lat positions (the only ring ever drawn, exactly

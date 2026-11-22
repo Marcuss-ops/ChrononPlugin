@@ -63,11 +63,13 @@ bool load_named_place(const std::string& catalog, const std::string& requested,
     };
     try {
         for (const auto& [path, keys] : sources) {
-            std::ifstream input(path);
-            if (!input) continue;
-            const std::string json((std::istreambuf_iterator<char>(input)), {});
-            const auto collection = parse_geojson(json);
-            for (const auto& feature : collection.features) {
+            std::shared_ptr<const GeoFeatureCollection> collection;
+            try {
+                collection = load_geojson_file_cached(path);
+            } catch (const std::exception&) {
+                continue;
+            }
+            for (const auto& feature : collection->features) {
                 if (!feature_name_matches(feature, place, keys)) continue;
                 polygons = feature.polygons;
             double min_lon = 180.0, max_lon = -180.0;

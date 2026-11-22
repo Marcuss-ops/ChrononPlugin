@@ -323,16 +323,16 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
             if (payload.contains("territory_geojson")) {
                 path = payload.at("territory_geojson").get<std::string>();
             }
-            std::ifstream input(path);
-            if (!input && !path.empty() && path.front() != '/') {
-                input.clear();
-                input.open(base + "/" + path);
+            if (!path.empty() && path.front() != '/') {
+                std::error_code ec;
+                if (!std::filesystem::exists(path, ec) &&
+                    std::filesystem::exists(base + "/" + path, ec)) {
+                    path = base + "/" + path;
+                }
             }
-            if (!input) throw std::runtime_error("cannot open territory GeoJSON: " + path);
-            const std::string json((std::istreambuf_iterator<char>(input)), {});
-            const auto collection = parse_geojson(json);
+            const auto collection = load_geojson_file_cached(path);
             const std::string target_name = payload.at("territory_feature").get<std::string>();
-            for (const auto& feature : collection.features) {
+            for (const auto& feature : collection->features) {
                 const auto found = feature.properties.find("shapeName");
                 if (found != feature.properties.end() && found->second == target_name) {
                     territory_polygons = feature.polygons;
@@ -344,15 +344,12 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
         }
         if (map_animation == "continental_atlas" ||
             (map_animation == "historic_location_timeline" && map_place.empty())) {
-            std::ifstream input(countries);
-            if (!input) throw std::runtime_error("cannot open country GeoJSON: " + countries);
-            const std::string json((std::istreambuf_iterator<char>(input)), {});
-            const auto collection = parse_geojson(json);
+            const auto collection = load_geojson_file_cached(countries);
             std::string target_name = payload.value("country_feature", map_place);
             if (map_animation == "continental_atlas") {
-                country_features = collection;
+                country_features = *collection;
             } else {
-                for (const auto& feature : collection.features) {
+                for (const auto& feature : collection->features) {
                     const auto found = feature.properties.find("ADMIN");
                     if (found != feature.properties.end() && found->second == target_name) {
                         territory_polygons = feature.polygons;

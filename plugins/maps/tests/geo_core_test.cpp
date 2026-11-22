@@ -7,8 +7,11 @@
 #include "chrononplugin/maps/historical_timeline.hpp"
 
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
+#include <unistd.h>
 
 namespace {
 
@@ -222,7 +225,41 @@ void test_territory_change() {
     CHECK(std::abs(area(c.lost) - 3.0) < 1e-3);
 }
 
+void test_cached_file_loader() {
+    namespace fs = std::filesystem;
+    const fs::path path = fs::temp_directory_path() /
+        ("chronon-geojson-cache-" + std::to_string(static_cast<long long>(getpid())) + ".json");
+    {
+        std::ofstream out(path);
+        out << kCollection;
+    }
+    chrononplugin::maps::reset_geojson_cache();
+    const auto s0 = chrononplugin::maps::geojson_cache_stats();
+    const auto first = chrononplugin::maps::load_geojson_file_cached(path.string());
+    const auto second = chrononplugin::maps::load_geojson_file_cached(path.string());
+    const auto s1 = chrononplugin::maps::geojson_cache_stats();
+    CHECK(first.get() == second.get());
+    CHECK(first->features.size() == 2);
+    CHECK(s1.files_loaded == s0.files_loaded + 1);
+    CHECK(s1.cache_hits == s0.cache_hits + 1);
+
+    // A changed source (size/mtime) must invalidate the entry.
+    {
+        std::ofstream out(path);
+        out << R"({"type":"Feature","properties":{},"geometry":{"type":"Polygon",
+            "coordinates":[[[0,0],[1,0],[1,1],[0,0]]]}})";
+    }
+    const auto changed = chrononplugin::maps::load_geojson_file_cached(path.string());
+    const auto s2 = chrononplugin::maps::geojson_cache_stats();
+    CHECK(changed->features.size() == 1);
+    CHECK(s2.files_loaded == s1.files_loaded + 1);
+    std::error_code ec;
+    fs::remove(path, ec);
+    chrononplugin::maps::reset_geojson_cache();
+}
+
 int main() {
+    test_cached_file_loader();
     test_territory_change();
     test_boolean_ops();
     test_difference_keeps_hole();

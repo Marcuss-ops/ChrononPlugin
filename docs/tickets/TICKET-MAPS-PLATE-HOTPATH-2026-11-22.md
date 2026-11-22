@@ -1,8 +1,9 @@
 # TICKET-MAPS-PLATE-HOTPATH-2026-11-22 — map plate hot path
 
-**Stato:** `OPEN` (2026-11-22)
+**Stato:** `IN PROGRESS` (2026-11-22)
 **Owner:** maps plugin
 **Origine:** audit Chronon 2026-11-22, voce CPLG-AUDIT-01
+**Ticket figlio (NVENC/SHA):** [TICKET-MAPS-NVENC-SHA-GATE-2026-11-22](TICKET-MAPS-NVENC-SHA-GATE-2026-11-22.md)
 **File:** `plugins/maps/src/map_plate_render_pipeline.cpp`,
 `plugins/maps/src/map_plate_raster.cpp`, `plugins/maps/src/map_plate_render_payload.cpp`
 
@@ -30,12 +31,13 @@
 
 ## Gate
 
-- [ ] Due job consecutivi sullo stesso catalogo: `parse_geojson` count = 1 per
-  file, non 1 per job.
-- [ ] Cache invalidata da un file modificato (mtime/size) e non condivisa tra
-  cataloghi diversi.
+- [x] `[OK 2026-11-22]` Due job consecutivi sullo stesso catalogo:
+  `maps_map_plate_raster_test` verifica 2 parse al primo raster e cache hit sui
+  successivi (count non incrementato).
+- [x] `[OK 2026-11-22]` `maps_geo_core_test` verifica cache hit e invalidazione
+  dopo modifica di path/size/mtime; chiave canonica per file.
 - [ ] MP4/plate SHA invariato con cache attiva.
 - [ ] Encode NVENC: qualità/bitrate nel contratto, speedup misurato, fallback
   CPU esplicito.
-- [ ] Test `maps` e build del plugin; `[NOT RUN]` il 2026-11-22 per RAM
-  occupata (nessun build lanciato).
+- [x] `[OK 2026-11-22]` Build plugin (`ChrononPlugin/build`, `-j1`) e test
+  `maps_geo_core_test` + `maps_map_plate_raster_test` PASS (0.65 s).

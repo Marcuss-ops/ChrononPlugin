@@ -2,8 +2,14 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <mutex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace chrononplugin::maps {
 namespace {
@@ -82,6 +88,31 @@ GeoFeature parse_feature(const json& feature) {
     return out;
 }
 
+// ── process-wide file cache ────────────────────────────────────────────────
+// Map jobs run back-to-back on the same catalog, so parsing the boundary
+// files per job dominated preparation. Every entry is immutable and keyed by
+// canonical path + size + mtime; the cap keeps a long-lived daemon bounded.
+constexpr std::size_t kMaxCachedFiles = 16;
+
+struct CacheEntry {
+    std::shared_ptr<const GeoFeatureCollection> collection;
+    std::uintmax_t size{0};
+    std::filesystem::file_time_type mtime{};
+};
+
+std::mutex g_cache_mutex;
+std::unordered_map<std::string, CacheEntry> g_cache;
+GeoJsonCacheStats g_stats{};
+
+std::string read_geojson_file(const std::string& path) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        throw std::runtime_error("cannot open GeoJSON source: " + path);
+    }
+    return std::string((std::istreambuf_iterator<char>(input)),
+                       std::istreambuf_iterator<char>());
+}
+
 }  // namespace
 
 GeoFeatureCollection parse_geojson(std::string_view text) {
@@ -103,6 +134,56 @@ GeoFeatureCollection parse_geojson(std::string_view text) {
         throw std::runtime_error("geojson: expected FeatureCollection or Feature");
     }
     return out;
+}
+
+GeoJsonCacheStats geojson_cache_stats() {
+    std::lock_guard lock(g_cache_mutex);
+    return g_stats;
+}
+
+void reset_geojson_cache() {
+    std::lock_guard lock(g_cache_mutex);
+    g_cache.clear();
+}
+
+std::shared_ptr<const GeoFeatureCollection>
+load_geojson_file_cached(const std::string& path) {
+    std::error_code ec;
+    std::string key = std::filesystem::weakly_canonical(path, ec);
+    if (ec) key = path;
+
+    std::uintmax_t size = std::filesystem::file_size(key, ec);
+    if (ec) {
+        throw std::runtime_error("cannot stat GeoJSON source: " + path);
+    }
+    const auto mtime = std::filesystem::last_write_time(key, ec);
+    if (ec) {
+        throw std::runtime_error("cannot stat GeoJSON source: " + path);
+    }
+
+    {
+        std::lock_guard lock(g_cache_mutex);
+        const auto it = g_cache.find(key);
+        if (it != g_cache.end() && it->second.size == size &&
+            it->second.mtime == mtime) {
+            ++g_stats.cache_hits;
+            return it->second.collection;
+        }
+    }
+
+    auto parsed = std::make_shared<const GeoFeatureCollection>(
+        parse_geojson(read_geojson_file(key)));
+
+    {
+        std::lock_guard lock(g_cache_mutex);
+        if (g_cache.size() >= kMaxCachedFiles) {
+            g_cache.clear();
+            ++g_stats.invalidations;
+        }
+        g_cache[key] = CacheEntry{parsed, size, mtime};
+        ++g_stats.files_loaded;
+    }
+    return parsed;
 }
 
 }  // namespace chrononplugin::maps
