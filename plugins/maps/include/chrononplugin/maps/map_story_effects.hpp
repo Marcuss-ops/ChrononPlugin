@@ -4,11 +4,34 @@
 
 #include <opencv2/core.hpp>
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace chrononplugin::maps {
+
+struct DataMapEntry {
+    std::string country;
+    double value = 0.0;
+};
+
+/// Inputs for the native data-choropleth treatment. The payload parser
+/// validates the shape; this struct is the renderer-side contract.
+struct DataMapSpec {
+    std::string title;
+    std::string prefix;
+    std::string unit;
+    std::string scheme = "heat";
+    std::string labels = "both";
+    bool show_legend = true;
+    bool show_text = true;
+    bool has_min = false;
+    bool has_max = false;
+    double min_value = 0.0;
+    double max_value = 0.0;
+    std::vector<DataMapEntry> values;
+};
 
 void draw_territory_wipe(cv::Mat& frame, const std::vector<GeoPolygon>& polygons,
                          std::pair<double, double> camera_anchor, double zoom,
@@ -23,8 +46,13 @@ void apply_documentary_finish(cv::Mat& frame, int frame_index,
 
 void apply_radial_motion_blur(cv::Mat& frame, double zoom_delta);
 
+/// Pulse phase, in cycles, for the area-glow composition. The phase advances
+/// over the whole map window; the half-cycle offset keeps the midpoint and the
+/// end on different breath samples even for integer-second windows.
+double area_glow_pulse_phase(double linear_progress, std::int64_t duration_us);
+
 void draw_area_glow(cv::Mat& frame, cv::Point center, double radius_pixels,
-                    double progress, const std::string& label);
+                    double pulse_phase, const std::string& label);
 
 void draw_radar_reveal(cv::Mat& frame, cv::Point center, double progress,
                        const std::string& label);
@@ -95,6 +123,40 @@ void draw_location_callout(cv::Mat& frame, cv::Point anchor,
 void draw_mountain_ridge_callout(cv::Mat& frame, const cv::Mat& mountain_overlay,
                                  double progress, const std::string& label,
                                  bool show_text = true);
+void draw_data_choropleth(cv::Mat& frame,
+                          const GeoFeatureCollection& countries,
+                          std::pair<double, double> camera_anchor,
+                          double zoom, double progress,
+                          const DataMapSpec& spec);
+
+void draw_country_spotlight(cv::Mat& frame,
+                            const std::vector<GeoPolygon>& polygons,
+                            std::pair<double, double> camera_anchor,
+                            double zoom, double progress,
+                            const std::string& label, bool show_text);
+
+void draw_data_bars(cv::Mat& frame, const DataMapSpec& spec, double progress,
+                    bool show_text);
+
+void draw_label_choreography(cv::Mat& frame,
+                             const std::vector<cv::Point>& anchors,
+                             const std::vector<std::string>& labels,
+                             double progress, bool show_text);
+
+/// Folded paper atlas: a trifold sheet opens, then a scan wipe hands the
+/// composition over to the live editorial map. Uses the base plate as the
+/// printed map, so it needs no additional geographic source.
+void draw_paper_map_fold(cv::Mat& frame, double progress,
+                         const std::string& label, bool show_text);
+
+/// Orbital descent: an orthographic globe rotates from Asia toward Europe and
+/// grows until the live map is revealed underneath. The Natural Earth country
+/// collection supplies the sphere's landmasses and borders.
+void draw_globe_dive(cv::Mat& frame,
+                     const GeoFeatureCollection& countries,
+                     double progress, const std::string& label,
+                     bool show_text);
+
 void draw_continental_atlas(cv::Mat& frame,
                             const GeoFeatureCollection& countries,
                             std::pair<double, double> camera_anchor,

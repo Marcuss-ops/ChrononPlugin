@@ -115,8 +115,14 @@ add_library(chrononplugin_maps STATIC
     src/map_renderer_catalog.cpp
     src/map_plate_telemetry.cpp
     src/map_route_render.cpp
+    src/map_story_effects_bars.cpp
+    src/map_story_effects_data.cpp
     src/map_story_effects_finish.cpp
+    src/map_story_effects_labels.cpp
+    src/map_story_effects_paper.cpp
+    src/map_story_effects_globe.cpp
     src/map_story_effects_primitives.cpp
+    src/map_story_effects_spotlight.cpp
     src/map_story_effects_story.cpp
     src/map_story_effects_tactical.cpp
     src/map_story_effects_territory.cpp

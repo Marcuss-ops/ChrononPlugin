@@ -37,7 +37,14 @@ cv::Mat render_plate_frame(const MapPlateScene& scene, std::int64_t frame_index,
         : 1.0;
     const auto compose_start = std::chrono::steady_clock::now();
     cv::Mat frame;
-    if (cached_plate != nullptr && !cached_plate->empty()) {
+    // Globe dive paints the complete frame until it starts revealing the live
+    // map. Do not build a base plate whose pixels would be discarded.
+    const bool globe_pre_reveal = scene.map_animation == "globe_dive" &&
+        linear_progress < 0.665;
+    if (globe_pre_reveal) {
+        frame = cv::Mat(scene.output_height, scene.output_width, CV_8UC3,
+                        cv::Scalar(0, 0, 0));
+    } else if (cached_plate != nullptr && !cached_plate->empty()) {
         // Same camera pose as the previous frame: the base plate is identical,
         // so only the per-frame treatment below has to run.
         frame = cached_plate->clone();
@@ -127,7 +134,9 @@ cv::Mat render_plate_frame(const MapPlateScene& scene, std::int64_t frame_index,
             1000.0 / std::max(1e-9, metres_per_pixel);
         const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
             scene.anchor, zoom, scene.output_width, scene.output_height);
-        draw_area_glow(frame, {x, y}, radius_pixels, linear_progress,
+        const double pulse_phase =
+            area_glow_pulse_phase(linear_progress, scene.duration_us);
+        draw_area_glow(frame, {x, y}, radius_pixels, pulse_phase,
                        pins.front().text);
     } else if (scene.map_animation == "radar_location_reveal") {
         const auto [x, y] = geo_to_screen(pins.front().lat, pins.front().lon,
@@ -214,6 +223,70 @@ cv::Mat render_plate_frame(const MapPlateScene& scene, std::int64_t frame_index,
             scene.anchor, zoom, story_progress, {x, y}, pins.front().text,
             scene.show_text ? payload.value("timeline_label", "") : "",
             scene.show_text);
+    } else if (scene.map_animation == "country_spotlight_reveal") {
+        const double reveal_progress = scene.map_place.empty()
+            ? story_progress
+            : std::clamp((linear_progress - 0.08) / 0.30, 0.0, 1.0);
+        draw_country_spotlight(frame, scene.territory_polygons, scene.anchor,
+            zoom, reveal_progress, pins.front().text, scene.show_text);
+    } else if (scene.map_animation == "data_bars_reveal") {
+        DataMapSpec spec;
+        const auto& data = payload.value("data", nlohmann::json::object());
+        spec.title = data.value("title", "");
+        spec.prefix = data.value("prefix", "");
+        spec.unit = data.value("unit", "");
+        spec.scheme = data.value("scheme", "heat");
+        spec.labels = data.value("labels", "both");
+        spec.show_legend = data.value("legend", true);
+        spec.show_text = scene.show_text;
+        spec.has_min = data.contains("min");
+        spec.has_max = data.contains("max");
+        if (spec.has_min) spec.min_value = data.at("min").get<double>();
+        if (spec.has_max) spec.max_value = data.at("max").get<double>();
+        const auto& values = data.at("values");
+        for (auto it = values.begin(); it != values.end(); ++it) {
+            spec.values.push_back({it.key(), it.value().get<double>()});
+        }
+        draw_data_bars(frame, spec, story_progress, scene.show_text);
+    } else if (scene.map_animation == "label_choreography") {
+        std::vector<cv::Point> anchors;
+        std::vector<std::string> labels;
+        anchors.reserve(pins.size());
+        labels.reserve(pins.size());
+        for (const Pin& pin : pins) {
+            const auto [x, y] = geo_to_screen(pin.lat, pin.lon, scene.anchor,
+                zoom, scene.output_width, scene.output_height);
+            anchors.emplace_back(x, y);
+            labels.push_back(pin.text);
+        }
+        draw_label_choreography(frame, anchors, labels, story_progress,
+                                scene.show_text);
+    } else if (scene.map_animation == "paper_map_fold") {
+        draw_paper_map_fold(frame, linear_progress, pins.front().text,
+                            scene.show_text);
+    } else if (scene.map_animation == "globe_dive") {
+        draw_globe_dive(frame, scene.country_features, linear_progress,
+                        pins.front().text, scene.show_text);
+    } else if (scene.map_animation == "data_choropleth_reveal") {
+        DataMapSpec spec;
+        const auto& data = payload.value("data", nlohmann::json::object());
+        spec.title = data.value("title", "");
+        spec.prefix = data.value("prefix", "");
+        spec.unit = data.value("unit", "");
+        spec.scheme = data.value("scheme", "heat");
+        spec.labels = data.value("labels", "both");
+        spec.show_legend = data.value("legend", true);
+        spec.show_text = scene.show_text;
+        spec.has_min = data.contains("min");
+        spec.has_max = data.contains("max");
+        if (spec.has_min) spec.min_value = data.at("min").get<double>();
+        if (spec.has_max) spec.max_value = data.at("max").get<double>();
+        const auto& values = data.at("values");
+        for (auto it = values.begin(); it != values.end(); ++it) {
+            spec.values.push_back({it.key(), it.value().get<double>()});
+        }
+        draw_data_choropleth(frame, scene.country_features, scene.anchor, zoom,
+                             story_progress, spec);
     } else {
         for (const Pin& pin : pins) {
             const auto [x, y] = geo_to_screen(pin.lat, pin.lon, scene.anchor,
@@ -235,7 +308,9 @@ cv::Mat render_plate_frame(const MapPlateScene& scene, std::int64_t frame_index,
         scene.map_animation == "dark_mirror_diorama" ||
         scene.map_animation == "voronoi_heat_contours" ||
         scene.map_animation == "holographic_postfx" ||
-        scene.map_animation == "continental_atlas";
+        scene.map_animation == "continental_atlas" ||
+        scene.map_animation == "data_choropleth_reveal" ||
+        scene.map_animation == "country_spotlight_reveal";
     if (!scene.map_place.empty() && !animation_fills_place) {
         const double place_fill_progress = std::clamp(
             linear_progress / 0.24, 0.0, 1.0);

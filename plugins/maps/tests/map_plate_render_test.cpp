@@ -6,14 +6,21 @@
 // summary.
 #include "chrononplugin/maps/map_plate_render.hpp"
 #include "chrononplugin/maps/map_plate_telemetry.hpp"
+#include "chrononplugin/maps/map_story_effects.hpp"
 
 #include <nlohmann/json.hpp>
+#include <opencv2/core.hpp>
 
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <vector>
 
 namespace {
 
@@ -65,6 +72,47 @@ std::string single_pin_with(const std::string& extra_field) {
 bool file_nonempty(const std::string& path) {
     struct stat st {};
     return ::stat(path.c_str(), &st) == 0 && st.st_size > 0;
+}
+
+bool extract_rgb_frame(const std::string& video, int frame, int width, int height,
+                       std::vector<unsigned char>& pixels) {
+    const std::string path = "/tmp/map_plate_render_test_frame.rgb";
+    const std::string command =
+        "ffmpeg -v error -y -i " + video + " -vf \"select=eq(n\\," +
+        std::to_string(frame) +
+        ")\" -vsync 0 -frames:v 1 -f rawvideo -pix_fmt rgb24 " + path;
+    if (std::system(command.c_str()) != 0) return false;
+    std::ifstream input(path, std::ios::binary);
+    pixels.assign(std::istreambuf_iterator<char>(input),
+                  std::istreambuf_iterator<char>());
+    std::remove(path.c_str());
+    return pixels.size() == static_cast<std::size_t>(width) *
+        static_cast<std::size_t>(height) * 3U;
+}
+
+// Render one composition at a fixed camera and return the mean absolute RGB
+// delta between the midpoint and the final frame. A static tail returns ~0.
+bool render_motion_delta(const std::string& payload, int width, int height,
+                         int frames, int mid_frame, int end_frame, double& delta) {
+    auto request = request_for(payload);
+    request.output_width = width;
+    request.output_height = height;
+    request.frame_count = frames;
+    const bool rendered = render_map_plate(request).status == MapPlateStatus::kOk;
+    std::vector<unsigned char> mid;
+    std::vector<unsigned char> end;
+    const bool decoded = rendered &&
+        extract_rgb_frame(request.output_video, mid_frame, width, height, mid) &&
+        extract_rgb_frame(request.output_video, end_frame, width, height, end);
+    std::remove(request.output_video.c_str());
+    std::remove(request.summary_output.c_str());
+    if (!decoded || mid.size() != end.size() || mid.empty()) return false;
+    double total = 0.0;
+    for (std::size_t i = 0; i < mid.size(); ++i) {
+        total += std::abs(static_cast<int>(mid[i]) - static_cast<int>(end[i]));
+    }
+    delta = total / static_cast<double>(mid.size());
+    return true;
 }
 
 }  // namespace
@@ -125,6 +173,12 @@ int main() {
     // Unsupported animations stay refused, never guessed.
     CHECK(render_map_plate(request_for(single_pin_with("\"label_animation\":\"pop\"")))
               .status == MapPlateStatus::kNotImplemented);
+    CHECK(render_map_plate(request_for(single_pin_with(
+              "\"map_animation\":\"data_choropleth_reveal\"")))
+              .status == MapPlateStatus::kNotImplemented);
+    CHECK(render_map_plate(request_for(single_pin_with(
+              "\"map_animation\":\"country_spotlight_reveal\"")))
+              .status == MapPlateStatus::kNotImplemented);
     CHECK(render_map_plate(request_for(single_pin_with("\"sampler\":\"opencv_opencl\"")))
               .status == MapPlateStatus::kNotImplemented);
 
@@ -146,6 +200,40 @@ int main() {
         "{\"latitude\":40.8,\"longitude\":14.3,\"id\":\"b\"}]}";
     CHECK(render_map_plate(request_for(tour_payload)).status ==
           MapPlateStatus::kNotImplemented);
+
+    // area_glow_pulse must keep moving for the whole window. A half-cycle
+    // offset keeps the midpoint and the end on different breath samples.
+    {
+        const std::int64_t duration_us = 5'600'000;
+        const double mid_phase =
+            chrononplugin::maps::area_glow_pulse_phase(0.5, duration_us);
+        const double end_phase =
+            chrononplugin::maps::area_glow_pulse_phase(1.0, duration_us);
+        CHECK(std::fabs(mid_phase - end_phase) > 0.1);
+        cv::Mat mid(180, 320, CV_8UC3, cv::Scalar(24, 26, 28));
+        cv::Mat end = mid.clone();
+        chrononplugin::maps::draw_area_glow(mid, {160, 90}, 80.0, mid_phase,
+                                            "Firenze");
+        chrononplugin::maps::draw_area_glow(end, {160, 90}, 80.0, end_phase,
+                                            "Firenze");
+        CHECK(cv::norm(mid, end, cv::NORM_L1) > 0.0);
+    }
+
+    // The paper-atlas treatment is a full-window composition: its folded
+    // opening and its scan wipe must both be non-static even without a camera.
+    {
+        cv::Mat paper_folded(360, 640, CV_8UC3, cv::Scalar(28, 36, 44));
+        cv::Mat paper_open = paper_folded.clone();
+        cv::Mat paper_map = paper_folded.clone();
+        chrononplugin::maps::draw_paper_map_fold(paper_folded, 0.16,
+                                                 "Europa", true);
+        chrononplugin::maps::draw_paper_map_fold(paper_open, 0.38,
+                                                 "Europa", true);
+        chrononplugin::maps::draw_paper_map_fold(paper_map, 0.92,
+                                                 "Europa", true);
+        CHECK(cv::norm(paper_folded, paper_open, cv::NORM_L1) > 0.0);
+        CHECK(cv::norm(paper_open, paper_map, cv::NORM_L1) > 0.0);
+    }
 
     if (::access("/usr/bin/ffmpeg", X_OK) != 0) {
         std::printf("note: /usr/bin/ffmpeg absent; render cases skipped\n");
@@ -220,6 +308,181 @@ int main() {
         }
         std::remove("/tmp/map_plate_render_test_out.mp4");
         std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // Data choropleth: country fills, a legend and name/value labels are
+        // rendered from the payload's data object on the Natural Earth set.
+        const std::string data_map_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"data_choropleth_reveal\","
+            "\"camera_anchor\":[48.0,10.0],\"camera_start_zoom\":3.6,"
+            "\"camera_end_zoom\":3.8,\"pins\":[{\"id\":\"europe\","
+            "\"label\":\"Europa\",\"latitude\":48.0,\"longitude\":10.0}],"
+            "\"data\":{\"title\":\"Test data\",\"scheme\":\"heat\","
+            "\"labels\":\"both\",\"values\":{\"Italy\":1.9,\"France\":2.8}}}";
+        const auto data_map = render_map_plate(request_for(data_map_payload));
+        CHECK(data_map.status == MapPlateStatus::kOk);
+        if (data_map.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // Data bars: the same validated data values as the choropleth, laid
+        // out as a staggered bar chart beside the map.
+        const std::string data_bars_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"data_bars_reveal\","
+            "\"camera_anchor\":[48.0,10.0],\"camera_start_zoom\":3.6,"
+            "\"camera_end_zoom\":3.8,\"pins\":[{\"id\":\"europe\","
+            "\"label\":\"Europa\",\"latitude\":48.0,\"longitude\":10.0}],"
+            "\"data\":{\"title\":\"Test bars\",\"scheme\":\"heat\","
+            "\"values\":{\"Italy\":1.9,\"France\":2.8}}}";
+        const auto data_bars = render_map_plate(request_for(data_bars_payload));
+        CHECK(data_bars.status == MapPlateStatus::kOk);
+        if (data_bars.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // Label choreography: five projected pins, five label treatments.
+        const std::string label_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"label_choreography\","
+            "\"camera_anchor\":[49.0,8.0],\"camera_start_zoom\":3.6,"
+            "\"camera_end_zoom\":3.8,\"pins\":["
+            "{\"id\":\"it\",\"label\":\"ITALIA\",\"latitude\":41.9,\"longitude\":12.5},"
+            "{\"id\":\"fr\",\"label\":\"FRANCIA\",\"latitude\":48.85,\"longitude\":2.35},"
+            "{\"id\":\"de\",\"label\":\"GERMANIA\",\"latitude\":52.52,\"longitude\":13.4}]}";
+        const auto label_map = render_map_plate(request_for(label_payload));
+        CHECK(label_map.status == MapPlateStatus::kOk);
+        if (label_map.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // Country spotlight: named-place polygons, desaturated surroundings
+        // and a warm focus treatment. map_place is the fail-closed identity.
+        const std::string spotlight_payload =
+            "{\"width\":64,\"height\":36,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":66667,\"map_animation\":\"country_spotlight_reveal\","
+            "\"map_place\":\"Italy\",\"pins\":[{\"id\":\"roma\","
+            "\"label\":\"Italia\",\"latitude\":41.9028,\"longitude\":12.4964}]}";
+        const auto spotlight = render_map_plate(request_for(spotlight_payload));
+        CHECK(spotlight.status == MapPlateStatus::kOk);
+        if (spotlight.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.mp4"));
+            CHECK(file_nonempty("/tmp/map_plate_render_test_out.telemetry.json"));
+        }
+        std::remove("/tmp/map_plate_render_test_out.mp4");
+        std::remove("/tmp/map_plate_render_test_out.telemetry.json");
+
+        // Paper atlas: the sheet opens over the plate and is then wiped into
+        // the live map; it must render natively from the base plate alone.
+        const std::string paper_payload =
+            "{\"width\":320,\"height\":180,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":266667,\"map_animation\":\"paper_map_fold\","
+            "\"camera_anchor\":[50.0,10.0],\"camera_start_zoom\":3.8,"
+            "\"camera_end_zoom\":4.2,\"pins\":[{\"id\":\"europe\","
+            "\"label\":\"Europa\",\"latitude\":50.0,\"longitude\":10.0}]}";
+        auto paper_request = request_for(paper_payload);
+        paper_request.output_width = 320;
+        paper_request.output_height = 180;
+        paper_request.frame_count = 8;
+        const auto paper_result = render_map_plate(paper_request);
+        CHECK(paper_result.status == MapPlateStatus::kOk);
+        if (paper_result.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty(paper_request.output_video));
+            CHECK(file_nonempty(paper_request.summary_output));
+        }
+        std::remove(paper_request.output_video.c_str());
+        std::remove(paper_request.summary_output.c_str());
+
+        // Globe dive: the Natural Earth world collection is projected
+        // orthographically and then handed off to the live map.
+        const std::string globe_payload =
+            "{\"width\":320,\"height\":180,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":266667,\"map_animation\":\"globe_dive\","
+            "\"camera_anchor\":[50.0,10.0],\"camera_start_zoom\":3.8,"
+            "\"camera_end_zoom\":4.2,\"pins\":[{\"id\":\"europe\","
+            "\"label\":\"Europa\",\"latitude\":50.0,\"longitude\":10.0}]}";
+        auto globe_request = request_for(globe_payload);
+        globe_request.output_width = 320;
+        globe_request.output_height = 180;
+        globe_request.frame_count = 8;
+        const auto globe_result = render_map_plate(globe_request);
+        CHECK(globe_result.status == MapPlateStatus::kOk);
+        if (globe_result.status == MapPlateStatus::kOk) {
+            CHECK(file_nonempty(globe_request.output_video));
+            CHECK(file_nonempty(globe_request.summary_output));
+        }
+        std::remove(globe_request.output_video.c_str());
+        std::remove(globe_request.summary_output.c_str());
+
+        // Full-window motion: a fixed camera leaves the pulse as the only
+        // moving element, so the midpoint and the last frame must differ.
+        const std::string pulse_payload =
+            "{\"width\":320,\"height\":180,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":2000000,\"map_animation\":\"area_glow_pulse\","
+            "\"area_glow_radius_km\":12.0,\"camera_start_zoom\":8.0,"
+            "\"camera_end_zoom\":8.0,\"pins\":[{\"id\":\"firenze\","
+            "\"label\":\"Firenze\",\"latitude\":43.7696,\"longitude\":11.2558}]}";
+        auto pulse_request = request_for(pulse_payload);
+        pulse_request.output_width = 320;
+        pulse_request.output_height = 180;
+        pulse_request.frame_count = 60;
+        const auto pulse_result = render_map_plate(pulse_request);
+        CHECK(pulse_result.status == MapPlateStatus::kOk);
+        if (pulse_result.status == MapPlateStatus::kOk) {
+            std::vector<unsigned char> mid_pixels;
+            std::vector<unsigned char> end_pixels;
+            CHECK(extract_rgb_frame(pulse_request.output_video, 30, 320, 180,
+                                    mid_pixels));
+            CHECK(extract_rgb_frame(pulse_request.output_video, 59, 320, 180,
+                                    end_pixels));
+            if (mid_pixels.size() == end_pixels.size() && !mid_pixels.empty()) {
+                double delta = 0.0;
+                for (std::size_t i = 0; i < mid_pixels.size(); ++i) {
+                    delta += std::abs(static_cast<int>(mid_pixels[i]) -
+                                      static_cast<int>(end_pixels[i]));
+                }
+                delta /= static_cast<double>(mid_pixels.size());
+                CHECK(delta > 0.1);
+            }
+        }
+        std::remove(pulse_request.output_video.c_str());
+        std::remove(pulse_request.summary_output.c_str());
+
+        // The already-certified route families must also keep moving to the
+        // end. A fixed camera isolates the route progress from the camera.
+        const std::string route_motion_payload =
+            "{\"width\":320,\"height\":180,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":2000000,\"map_animation\":\"route_line\","
+            "\"camera_anchor\":[42.0,12.0],\"camera_start_zoom\":5.5,"
+            "\"camera_end_zoom\":5.5,\"pins\":["
+            "{\"id\":\"roma\",\"label\":\"Roma\",\"latitude\":41.9028,\"longitude\":12.4964},"
+            "{\"id\":\"firenze\",\"label\":\"Firenze\",\"latitude\":43.7696,\"longitude\":11.2558}]}";
+        double route_delta = 0.0;
+        CHECK(render_motion_delta(route_motion_payload, 320, 180, 60, 30, 59,
+                                  route_delta));
+        CHECK(route_delta > 0.1);
+
+        const std::string multi_leg_motion_payload =
+            "{\"width\":320,\"height\":180,\"fps_num\":30,\"fps_den\":1,"
+            "\"duration_us\":2000000,\"map_animation\":\"multi_leg_flight\","
+            "\"camera_anchor\":[43.0,12.0],\"camera_start_zoom\":5.5,"
+            "\"camera_end_zoom\":5.5,\"pins\":["
+            "{\"id\":\"roma\",\"label\":\"Roma\",\"latitude\":41.9028,\"longitude\":12.4964},"
+            "{\"id\":\"firenze\",\"label\":\"Firenze\",\"latitude\":43.7696,\"longitude\":11.2558},"
+            "{\"id\":\"venezia\",\"label\":\"Venezia\",\"latitude\":45.4408,\"longitude\":12.3155}]}";
+        double multi_leg_delta = 0.0;
+        CHECK(render_motion_delta(multi_leg_motion_payload, 320, 180, 60, 30,
+                                  59, multi_leg_delta));
+        CHECK(multi_leg_delta > 0.1);
 
         // h264_nvenc rejects 64x36 (below its minimum frame size), so the
         // NVENC contract is exercised at a valid 320x180 resolution.

@@ -221,7 +221,7 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         "map_preset",
         "territory_feature", "territory_geojson", "territory_subtitle",
         "country_feature", "timeline_label", "mountain_overlay_asset",
-        "documentary_finish", "route_altitudes_m",
+        "data", "documentary_finish", "route_altitudes_m",
     };
     for (auto it = payload.begin(); it != payload.end(); ++it) {
         if (kKnown.find(it.key()) == kKnown.end()) {
@@ -273,6 +273,82 @@ bool normalize_pins(const nlohmann::json& raw_pins, std::vector<Pin>& pins,
         error = "map composition '" + map_animation +
                 "' is not ported natively yet";
         return false;
+    }
+    if (map_animation == "country_spotlight_reveal" && !has_map_place) {
+        error = "country_spotlight_reveal requires map_place";
+        return false;
+    }
+    if (map_animation == "data_choropleth_reveal" ||
+        map_animation == "data_bars_reveal") {
+        const auto data_it = payload.find("data");
+        if (data_it == payload.end() || !data_it->is_object()) {
+            error = map_animation + " requires a data object";
+            return false;
+        }
+        const auto& data = *data_it;
+        static const std::set<std::string> kDataKeys = {
+            "title", "prefix", "unit", "scheme", "labels", "legend", "min",
+            "max", "values"};
+        for (auto it = data.begin(); it != data.end(); ++it) {
+            if (kDataKeys.find(it.key()) == kDataKeys.end()) {
+                error = "unsupported data field: " + it.key();
+                return false;
+            }
+        }
+        const auto values_it = data.find("values");
+        if (values_it == data.end() || !values_it->is_object() ||
+            values_it->empty()) {
+            error = "data.values must be a non-empty object";
+            return false;
+        }
+        for (auto it = values_it->begin(); it != values_it->end(); ++it) {
+            if (!it.value().is_number() ||
+                !std::isfinite(it.value().get<double>())) {
+                error = "data.values must contain finite numbers";
+                return false;
+            }
+        }
+        for (const char* key : {"title", "prefix", "unit"}) {
+            if (data.contains(key) && !data.at(key).is_string()) {
+                error = std::string("data.") + key + " must be a string";
+                return false;
+            }
+        }
+        const std::string scheme = data.value("scheme", "heat");
+        static const std::set<std::string> kSchemes = {
+            "reds", "blues", "greens", "heat", "purples", "diverging"};
+        if (data.contains("scheme") &&
+            (!data.at("scheme").is_string() ||
+             kSchemes.find(scheme) == kSchemes.end())) {
+            error = "data.scheme must be reds, blues, greens, heat, purples or diverging";
+            return false;
+        }
+        const std::string labels = data.value("labels", "both");
+        static const std::set<std::string> kLabels = {
+            "name", "value", "both", "none"};
+        if (data.contains("labels") &&
+            (!data.at("labels").is_string() ||
+             kLabels.find(labels) == kLabels.end())) {
+            error = "data.labels must be name, value, both or none";
+            return false;
+        }
+        if (data.contains("legend") && !data.at("legend").is_boolean()) {
+            error = "data.legend must be a boolean";
+            return false;
+        }
+        for (const char* key : {"min", "max"}) {
+            if (data.contains(key) &&
+                (!data.at(key).is_number() ||
+                 !std::isfinite(data.at(key).get<double>()))) {
+                error = std::string("data.") + key + " must be a finite number";
+                return false;
+            }
+        }
+        if (data.contains("min") && data.contains("max") &&
+            data.at("min").get<double>() >= data.at("max").get<double>()) {
+            error = "data.min must be lower than data.max";
+            return false;
+        }
     }
     const auto& pin_timing = payload.find("pin_timing");
     if (pin_timing != payload.end() && !pin_timing->is_null() &&

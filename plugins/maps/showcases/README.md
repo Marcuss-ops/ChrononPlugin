@@ -34,6 +34,36 @@ screen-space reflections: the particle flow is a single-threaded CPU agent pass 
 the mirror uses a perspective warp plus a flipped, blurred reflection. All five
 read the same GeoJSON and render as four-second 1920×1080/30 NVENC MP4s.
 
+`24_data_bars_europe.json` is the animated data-bars variant: the same
+validated `data` object as the choropleth, but values grow as a staggered bar
+chart beside the map.
+
+`25_label_choreography_europe.json` demonstrates five label motions in one
+clip: rise, pop, slide, typewriter and spread, anchored to five projected pins.
+
+`26_paper_map_europe.json` is the folded paper atlas. The editorial plate is
+printed in sepia on a cream trifold sheet, the sheet opens with crease shadows
+and a folded-cover tag, and a soft scan wipe then hands the composition to the
+live colour map. It uses the base plate as the printed map, so no extra source
+is required.
+
+`27_globe_dive_europe.json` is the orbital descent. The Natural Earth country
+collection is projected orthographically onto a starfield globe, which rotates
+from Asia toward Europe while growing past the frame edges; the live map is
+revealed underneath and the Europe label lands at the end.
+
+`23_country_spotlight_italy.json` is the native spotlight treatment: the
+surrounding map is desaturated, the named country keeps a warm fill, a soft
+halo and a traced border, and the camera performs a full-window push-in.
+
+`22_data_choropleth_europe.json` is the native data-map treatment: every
+country in `data.values` is tinted on a reds/blues/greens/heat/purples/
+diverging scale, the terrain stays visible, and a legend plus the highest-value
+name/value labels are added after a short staggered reveal. It uses the same
+Natural Earth polygons and camera contract as the other native compositions;
+the `data` object is fail-closed (unknown fields, non-finite values and unknown
+schemes are rejected).
+
 `15_tag_style_showcase.mp4` is a typography-only sample with 15 named geographic
 label presets, shown in vertical groups of five. The text and style are
 selectable in `15_tag_style_showcase.json`. The presets are shared with the

@@ -1,0 +1,44 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 6000000,
+  "camera_animation": "slow_approach",
+  "camera_motion_duration_us": 6000000,
+  "basemap": "chronon_editorial",
+  "map_animation": "data_bars_reveal",
+  "camera_anchor": [50.0, 10.0],
+  "camera_start_zoom": 3.8,
+  "camera_end_zoom": 4.2,
+  "pins": [
+    {"id": "europe", "label": "Europa", "latitude": 50.0, "longitude": 10.0}
+  ],
+  "data": {
+    "title": "GDP 2024 - trillion US$",
+    "prefix": "$",
+    "unit": "T",
+    "scheme": "heat",
+    "labels": "both",
+    "legend": true,
+    "min": 0.0,
+    "max": 5.0,
+    "values": {
+      "Germany": 4.5,
+      "France": 2.8,
+      "Italy": 2.2,
+      "Spain": 1.6,
+      "Netherlands": 1.1,
+      "Switzerland": 0.9,
+      "Poland": 0.8,
+      "Belgium": 0.6,
+      "Sweden": 0.6,
+      "Austria": 0.5,
+      "Portugal": 0.3,
+      "Greece": 0.25
+    }
+  },
+  "documentary_finish": {"vignette": 0.32, "grain": 0.018},
+  "encoder_profile": {"codec": "libx264", "gpu": false, "preset": "veryfast", "quality": 23},
+  "sampler": "cpu"
+}

@@ -20,6 +20,8 @@ const std::set<std::string>& supported_map_animations() {
         "territory_flood_fill", "territory_tactical_fill", "light_beam_drop", "city_network_expansion",
         "territory_extrusion", "map_style_morph", "mountain_ridge_callout",
         "continental_atlas", "historic_location_timeline",
+        "data_choropleth_reveal", "data_bars_reveal", "label_choreography",
+        "country_spotlight_reveal", "paper_map_fold", "globe_dive",
         "editorial_vox", "editorial_paper_cutout", "editorial_dark_radar",
         "editorial_blueprint", "editorial_connection_arc",
         "editorial_floating_island",

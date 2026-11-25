@@ -132,11 +132,20 @@ void draw_territory_callout(cv::Mat& frame, cv::Point anchor,
     cv::addWeighted(frame, 1.0 - opacity, overlay, opacity, 0.0, frame);
 }
 
+double area_glow_pulse_phase(double linear_progress, std::int64_t duration_us) {
+    const double seconds = std::max(0.0,
+        static_cast<double>(duration_us) / 1'000'000.0);
+    // One pulse every ~2 s, always ending on a half cycle: an integer cycle
+    // count would put the midpoint and the end on the same breath sample.
+    const double cycles = std::max(1.5, std::floor(seconds / 2.0) + 0.5);
+    return std::clamp(linear_progress, 0.0, 1.0) * cycles;
+}
+
 void draw_area_glow(cv::Mat& frame, cv::Point center, double radius_pixels,
-                    double progress, const std::string& label) {
+                    double pulse_phase, const std::string& label) {
     const double radius = std::clamp(radius_pixels, 8.0,
         static_cast<double>(std::max(frame.cols, frame.rows)));
-    const double breath = 0.95 + 0.05 * std::sin(2.0 * kPi * progress);
+    const double breath = 0.95 + 0.05 * std::sin(2.0 * kPi * pulse_phase);
     const int r = std::max(8, cvRound(radius * breath));
 
     cv::Mat fill_mask(frame.size(), CV_8UC1, cv::Scalar(0));

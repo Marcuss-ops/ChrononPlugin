@@ -343,10 +343,14 @@ MapPlateRenderResult render_map_plate(const MapPlateRequest& request) {
                 throw std::runtime_error("territory feature not found in GeoJSON: " + target_name);
         }
         if (map_animation == "continental_atlas" ||
+            map_animation == "data_choropleth_reveal" ||
+            map_animation == "globe_dive" ||
             (map_animation == "historic_location_timeline" && map_place.empty())) {
             const auto collection = load_geojson_file_cached(countries);
             std::string target_name = payload.value("country_feature", map_place);
-            if (map_animation == "continental_atlas") {
+            if (map_animation == "continental_atlas" ||
+                map_animation == "data_choropleth_reveal" ||
+                map_animation == "globe_dive") {
                 country_features = *collection;
             } else {
                 for (const auto& feature : collection->features) {
