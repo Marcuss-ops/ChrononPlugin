@@ -52,6 +52,13 @@ collection is projected orthographically onto a starfield globe, which rotates
 from Asia toward Europe while growing past the frame edges; the live map is
 revealed underneath and the Europe label lands at the end.
 
+Three new native C++ scenes extend the gallery with grounded Italian locations:
+`28_venezia_laguna_satellite.json` scans the Venice lagoon and its municipal
+outline from satellite imagery; `29_costiera_amalfitana_route.json` animates a
+three-stop coastal itinerary from Napoli through Amalfi to Salerno; and
+`30_italia_paper_atlas.json` folds open a printed atlas plate focused on Italy.
+All three are 1080p/30 NVENC clips rendered by `maps_dynamic_map_render`.
+
 `23_country_spotlight_italy.json` is the native spotlight treatment: the
 surrounding map is desaturated, the named country keeps a warm fill, a soft
 halo and a traced border, and the camera performs a full-window push-in.

@@ -1,0 +1,18 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 5000000,
+  "camera_motion_duration_us": 2200000,
+  "camera_animation": "slow_approach",
+  "basemap": "chronon_editorial",
+  "map_animation": "paper_map_fold",
+  "map_place": "Italy",
+  "pins": [
+    {"id": "italia", "label": "ITALIA", "latitude": 41.9028, "longitude": 12.4964}
+  ],
+  "documentary_finish": {"vignette": 0.20, "grain": 0.012},
+  "encoder_profile": {"codec": "h264_nvenc", "gpu": true, "preset": "p6", "quality": 15},
+  "sampler": "cpu"
+}

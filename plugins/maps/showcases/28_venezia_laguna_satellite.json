@@ -1,0 +1,21 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 5000000,
+  "camera_motion_duration_us": 5000000,
+  "camera_animation": "slow_approach",
+  "basemap": "esri_sat",
+  "map_animation": "satellite_scan_reveal",
+  "map_place": "Venezia",
+  "camera_anchor": [45.4408, 12.3155],
+  "camera_start_zoom": 8.2,
+  "camera_end_zoom": 10.8,
+  "pins": [
+    {"id": "venezia", "label": "VENEZIA", "latitude": 45.4408, "longitude": 12.3155}
+  ],
+  "documentary_finish": {"vignette": 0.10, "grain": 0.004},
+  "encoder_profile": {"codec": "h264_nvenc", "gpu": true, "preset": "p6", "quality": 15},
+  "sampler": "cpu"
+}

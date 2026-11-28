@@ -143,8 +143,13 @@ cv::Mat render_plate_frame(const MapPlateScene& scene, std::int64_t frame_index,
             scene.anchor, zoom, scene.output_width, scene.output_height);
         draw_radar_reveal(frame, {x, y}, story_progress, pins.front().text);
     } else if (scene.map_animation == "satellite_scan_reveal") {
+        // Named-place renders normally start with the geographic treatment
+        // already resolved. A satellite scan is explicitly temporal, though:
+        // keep its wipe moving across the territory during the whole clip.
+        const double scan_progress = scene.map_place.empty()
+            ? story_progress : linear_progress;
         draw_satellite_scan(frame, scene.territory_polygons, scene.anchor, zoom,
-            story_progress, pins.front().text);
+            scan_progress, pins.front().text);
     } else if (scene.map_animation == "territory_flood_fill") {
         draw_territory_flood_fill(frame, scene.territory_polygons, scene.anchor,
             zoom, story_progress,

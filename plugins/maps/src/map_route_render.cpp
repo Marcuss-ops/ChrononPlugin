@@ -63,13 +63,13 @@ void draw_label(cv::Mat& frame, cv::Point p, const std::string& label,
     if (label.empty()) return;
     int baseline = 0;
     const int width = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX,
-                                     0.61, 1, &baseline).width;
+                                     0.70, 2, &baseline).width;
     if (offset.x < 0) offset.x -= width;
     const cv::Point origin(p.x + offset.x, p.y + offset.y);
     cv::putText(frame, label, origin + cv::Point(1, 1), cv::FONT_HERSHEY_SIMPLEX,
-                0.61, cv::Scalar(15, 25, 35), 2, cv::LINE_AA);
-    cv::putText(frame, label, origin, cv::FONT_HERSHEY_SIMPLEX, 0.61,
-                kPaper, 1, cv::LINE_AA);
+                0.70, cv::Scalar(15, 25, 35), 3, cv::LINE_AA);
+    cv::putText(frame, label, origin, cv::FONT_HERSHEY_SIMPLEX, 0.70,
+                kPaper, 2, cv::LINE_AA);
 }
 
 }  // namespace
@@ -86,7 +86,7 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     for (std::size_t i = 0; i + 1 < stops.size(); ++i) {
         segments.push_back(segment_points(stops[i], stops[i + 1], camera_anchor,
                                           zoom, frame.size()));
-        cv::polylines(frame, segments.back(), false, cv::Scalar(209, 196, 174),
+        cv::polylines(frame, segments.back(), false, cv::Scalar(139, 127, 111),
                       1, cv::LINE_AA);
     }
 
@@ -96,8 +96,8 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     const double segment_progress = progress >= 1.0 ? 1.0 : scaled - active_segment;
     cv::Mat route_glow(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
     for (std::size_t i = 0; i < active_segment; ++i) {
-        cv::polylines(frame, segments[i], false, kMapBlue, 2, cv::LINE_AA);
-        cv::polylines(route_glow, segments[i], false, kMapBlue, 8, cv::LINE_AA);
+        cv::polylines(frame, segments[i], false, kMapBlue, 3, cv::LINE_AA);
+        cv::polylines(route_glow, segments[i], false, kMapBlue, 13, cv::LINE_AA);
     }
     const auto& active = segments[active_segment];
     const std::size_t active_count = std::max<std::size_t>(
@@ -105,12 +105,12 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
     std::vector<cv::Point> partial(active.begin(),
         active.begin() + static_cast<std::ptrdiff_t>(std::min(active_count, active.size())));
     if (partial.size() >= 2) {
-        cv::polylines(frame, partial, false, kMapBlue, 2, cv::LINE_AA);
-        cv::polylines(route_glow, partial, false, kMapBlue, 9, cv::LINE_AA);
+        cv::polylines(frame, partial, false, kMapBlue, 3, cv::LINE_AA);
+        cv::polylines(route_glow, partial, false, kMapBlue, 15, cv::LINE_AA);
     }
     cv::Mat bloom;
-    cv::GaussianBlur(route_glow, bloom, {13, 13}, 0.0);
-    cv::addWeighted(frame, 1.0, bloom, 0.11, 0.0, frame);
+    cv::GaussianBlur(route_glow, bloom, {21, 21}, 0.0);
+    cv::addWeighted(frame, 1.0, bloom, 0.20, 0.0, frame);
 
     for (std::size_t i = 0; i < stops.size(); ++i) {
         const auto [x, y] = geo_to_screen(stops[i].latitude, stops[i].longitude,
@@ -140,8 +140,12 @@ void draw_animated_route(cv::Mat& frame, const std::vector<MapRouteStop>& stops,
         static_cast<std::size_t>(std::nearbyint(segment_progress * (active.size() - 1))),
         active.size() - 1);
     const cv::Point head = active[head_index];
-    cv::circle(frame, head, 4, kPaper, cv::FILLED, cv::LINE_AA);
-    cv::circle(frame, head, 2, kMapBlue, cv::FILLED, cv::LINE_AA);
+    cv::Mat beacon(frame.size(), frame.type(), cv::Scalar(0, 0, 0));
+    cv::circle(beacon, head, 24, kMapBlue, 5, cv::LINE_AA);
+    cv::GaussianBlur(beacon, beacon, {0, 0}, 10.0);
+    cv::addWeighted(frame, 1.0, beacon, 0.25, 0.0, frame);
+    cv::circle(frame, head, 8, kPaper, cv::FILLED, cv::LINE_AA);
+    cv::circle(frame, head, 5, kMapBlue, cv::FILLED, cv::LINE_AA);
 }
 
 }  // namespace chrononplugin::maps

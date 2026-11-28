@@ -1,0 +1,22 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps_num": 30,
+  "fps_den": 1,
+  "duration_us": 6000000,
+  "camera_motion_duration_us": 6000000,
+  "camera_animation": "slow_approach",
+  "basemap": "esri_sat",
+  "map_animation": "multi_leg_flight",
+  "camera_anchor": [40.65, 14.55],
+  "camera_start_zoom": 7.8,
+  "camera_end_zoom": 9.5,
+  "pins": [
+    {"id": "napoli", "label": "NAPOLI", "latitude": 40.8518, "longitude": 14.2681},
+    {"id": "amalfi", "label": "AMALFI", "latitude": 40.6340, "longitude": 14.6027},
+    {"id": "salerno", "label": "SALERNO", "latitude": 40.6824, "longitude": 14.7681}
+  ],
+  "documentary_finish": {"vignette": 0.08, "grain": 0.003},
+  "encoder_profile": {"codec": "h264_nvenc", "gpu": true, "preset": "p6", "quality": 15},
+  "sampler": "cpu"
+}
